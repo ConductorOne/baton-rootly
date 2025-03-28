@@ -1,15 +1,25 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/spf13/viper"
 )
 
 var (
+	APIKeyField = field.StringField(
+		"api-key",
+		field.WithDescription("API key for authenticating with the service"),
+		field.WithRequired(true),
+	)
+
 	// ConfigurationFields defines the external configuration required for the
 	// connector to run. Note: these fields can be marked as optional or
 	// required.
-	ConfigurationFields = []field.SchemaField{}
+	ConfigurationFields = []field.SchemaField{
+		APIKeyField,
+	}
 
 	// FieldRelationships defines relationships between the fields listed in
 	// ConfigurationFields that can be automatically validated. For example, a
@@ -23,5 +33,10 @@ var (
 // needs to perform extra validations that cannot be encoded with configuration
 // parameters.
 func ValidateConfig(v *viper.Viper) error {
+	apiKey := v.GetString(APIKeyField.FieldName)
+	if len(apiKey) == 0 {
+		return fmt.Errorf("required field 'api-key' is missing")
+	}
+
 	return nil
 }
