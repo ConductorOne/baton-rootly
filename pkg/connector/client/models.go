@@ -11,6 +11,7 @@ type User struct {
 	Email     string    `jsonapi:"attr,email"`
 	FullName  string    `jsonapi:"attr,full_name"`
 	SlackID   string    `jsonapi:"attr,slack_id"`
+	Phone     string    `jsonapi:"attr,phone"`
 	UpdatedAt time.Time `jsonapi:"attr,updated_at"`
 	CreatedAt time.Time `jsonapi:"attr,created_at"`
 }

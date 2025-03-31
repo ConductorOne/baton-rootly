@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/google/jsonapi"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -107,7 +108,7 @@ func (c *Client) doRequest(
 	url *url.URL,
 	payload interface{},
 	target interface{},
-) (*http.Response, error) {
+) (*http.Response, string, error) {
 	l := ctxzap.Extract(ctx)
 
 	// create the request
@@ -120,7 +121,7 @@ func (c *Client) doRequest(
 	}
 	req, err := c.httpClient.NewRequest(ctx, method, url, reqOptions...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// do the request and handle the response
@@ -131,9 +132,9 @@ func (c *Client) doRequest(
 	}
 	resp, err := c.httpClient.Do(req, respOptions...)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return resp, nil
+	return resp, "", nil
 }
 
 func (c *Client) generateURL(
@@ -159,10 +160,10 @@ func (c *Client) generateURL(
 	return output
 }
 
-func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
+func (c *Client) GetUsers(ctx context.Context, _ *pagination.Token) ([]User, string, error) {
 	// TODO(steve) implement with pagination
 	var users []User
-	_, err := c.doRequest(
+	_, _, err := c.doRequest(
 		ctx,
 		http.MethodGet,
 		c.generateURL(UsersAPIEndpoint, nil),
@@ -170,7 +171,7 @@ func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
 		&users,
 	)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return users, nil
+	return users, "", nil
 }
