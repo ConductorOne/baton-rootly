@@ -2,10 +2,10 @@ module github.com/conductorone/baton-rootly
 
 go 1.23.4
 
-toolchain go1.23.7
+toolchain go1.24.1
 
 require (
-	github.com/conductorone/baton-sdk v0.2.86
+	github.com/conductorone/baton-sdk v0.2.88
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
