@@ -15,14 +15,3 @@ type User struct {
 	UpdatedAt time.Time `jsonapi:"attr,updated_at"`
 	CreatedAt time.Time `jsonapi:"attr,created_at"`
 }
-
-type Meta struct {
-	CurrentPage  int `json:"current_page"`
-	NextPage     int `json:"next_page"`
-	PreviousPage int `json:"prev_page"`
-	TotalPages   int `json:"total_pages"`
-	TotalCount   int `json:"total_count"`
-}
-type UsersResponse struct {
-	Data []User `json:"data"`
-}
