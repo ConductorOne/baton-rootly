@@ -42,7 +42,7 @@ func main() {
 	}
 }
 
-// getConnector initializes and returns the connector
+// getConnector initializes and returns the connector.
 func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
 	if err := ValidateConfig(v); err != nil {
