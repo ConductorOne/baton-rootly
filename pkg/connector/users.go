@@ -53,22 +53,25 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 // getUserTraitOptions returns a list of UserTraitOption based on the available fields for a Rootly user.
 func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 	// required Rootly fields
-	fields := map[string]interface{}{
+	profile := map[string]interface{}{
 		// TODO: confirm correct keys to use
 		"user_id": user.ID,
 	}
 	// optional Rootly fields
 	if user.Name != "" {
-		fields["login"] = user.Name // should key be "name"?
+		profile["login"] = user.Name // should key be "name"?
 	}
 	if user.FullName != "" {
-		fields["full_name"] = user.FullName
+		profile["full_name"] = user.FullName
+		first, last := sdkResource.SplitFullName(user.FullName)
+		profile["first_name"] = first
+		profile["last_name"] = last
 	}
 	if user.SlackID != "" {
-		fields["slack_id"] = user.SlackID
+		profile["slack_id"] = user.SlackID
 	}
 	if user.Phone != "" {
-		fields["phone"] = user.Phone
+		profile["phone"] = user.Phone
 	}
 	return []sdkResource.UserTraitOption{
 		sdkResource.WithEmail(user.Email, true),
@@ -76,7 +79,7 @@ func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 		sdkResource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
 		sdkResource.WithCreatedAt(user.CreatedAt),
 		// should we add user.UpdatedAt ? (always present)
-		sdkResource.WithUserProfile(fields),
+		sdkResource.WithUserProfile(profile),
 	}
 }
 
