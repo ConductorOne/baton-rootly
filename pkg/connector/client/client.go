@@ -50,7 +50,7 @@ func NewClient(ctx context.Context, apiKey string) (*Client, error) {
 	}, nil
 }
 
-// TODO: move into baton-sdk
+// TODO: move into baton-sdk.
 func withVndApiJSONBody(body interface{}) uhttp.RequestOption {
 	return func() (io.ReadWriter, map[string]string, error) {
 		buffer := new(bytes.Buffer)
@@ -68,14 +68,14 @@ func withVndApiJSONBody(body interface{}) uhttp.RequestOption {
 	}
 }
 
-// TODO: move into baton-sdk
+// TODO: move into baton-sdk.
 func isVndApiJSONContentType(contentType string) bool {
 	contentType = strings.TrimSpace(strings.ToLower(contentType))
 	return strings.HasPrefix(contentType, "application") &&
 		strings.Contains(contentType, "vnd.api+json")
 }
 
-// TODO: move into baton-sdk
+// TODO: move into baton-sdk.
 func withVndApiJSONResponse(response interface{}) uhttp.DoOption {
 	return func(resp *uhttp.WrapperResponse) error {
 		contentHeader := resp.Header.Get("Content-Type")
@@ -91,7 +91,7 @@ func withVndApiJSONResponse(response interface{}) uhttp.DoOption {
 			return nil
 		}
 
-		// the sdk replaces resp.Body with a no-op closer before passing into the options, so create a new buffer
+		// the sdk wraps resp.Body in a no-op closer before passing into the options, so create a new buffer
 		err := jsonapi.UnmarshalPayload(bytes.NewBuffer(resp.Body), response)
 		if err != nil {
 			// to print the response, set the envvar BATON_DEBUG_PRINT_RESPONSE_BODY as non-empty, instead
@@ -108,7 +108,7 @@ func (c *Client) doRequest(
 	url *url.URL,
 	payload interface{},
 	target interface{},
-) (*http.Response, string, error) {
+) (string, error) {
 	l := ctxzap.Extract(ctx)
 
 	// create the request
@@ -121,7 +121,7 @@ func (c *Client) doRequest(
 	}
 	req, err := c.httpClient.NewRequest(ctx, method, url, reqOptions...)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	// do the request and handle the response
@@ -132,9 +132,10 @@ func (c *Client) doRequest(
 	}
 	resp, err := c.httpClient.Do(req, respOptions...)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
-	return resp, "", nil
+	defer resp.Body.Close()
+	return "", nil
 }
 
 func (c *Client) generateURL(
@@ -163,7 +164,7 @@ func (c *Client) generateURL(
 func (c *Client) GetUsers(ctx context.Context, _ *pagination.Token) ([]User, string, error) {
 	// TODO(steve) implement with pagination
 	var users []User
-	_, _, err := c.doRequest(
+	_, err := c.doRequest(
 		ctx,
 		http.MethodGet,
 		c.generateURL(UsersAPIEndpoint, nil),

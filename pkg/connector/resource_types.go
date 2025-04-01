@@ -10,14 +10,14 @@ var userResourceType = &v2.ResourceType{
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
 }
 
-var roleResourceType = &v2.ResourceType{
-	Id:          "role",
-	DisplayName: "Role",
-	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
-}
-
-var teamResourceType = &v2.ResourceType{
-	Id:          "team",
-	DisplayName: "Team",
-	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
-}
+// var roleResourceType = &v2.ResourceType{
+//	Id:          "role",
+//	DisplayName: "Role",
+//	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
+//}
+//
+// var teamResourceType = &v2.ResourceType{
+//	Id:          "team",
+//	DisplayName: "Team",
+//	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+//}
