@@ -2,9 +2,6 @@ package client
 
 import "time"
 
-type Attributes struct {
-}
-
 type User struct {
 	ID        string    `jsonapi:"primary,id"`
 	Name      string    `jsonapi:"attr,name"`

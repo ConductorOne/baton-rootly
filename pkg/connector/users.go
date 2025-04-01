@@ -54,12 +54,12 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 	// required Rootly fields
 	profile := map[string]interface{}{
-		// TODO: confirm correct keys to use
-		"user_id": user.ID,
+		"user_id":    user.ID,
+		"updated_at": user.CreatedAt,
 	}
 	// optional Rootly fields
 	if user.Name != "" {
-		profile["login"] = user.Name // should key be "name"?
+		profile["name"] = user.Name
 	}
 	if user.FullName != "" {
 		profile["full_name"] = user.FullName
@@ -78,7 +78,6 @@ func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 		// always set status to enabled, since Rootly doesn't allow for disabled user status
 		sdkResource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
 		sdkResource.WithCreatedAt(user.CreatedAt),
-		// should we add user.UpdatedAt ? (always present)
 		sdkResource.WithUserProfile(profile),
 	}
 }
@@ -107,6 +106,7 @@ func (o *userBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken 
 
 func newUserBuilder(client *client.Client) *userBuilder {
 	return &userBuilder{
-		client: client,
+		client:       client,
+		resourceType: userResourceType,
 	}
 }

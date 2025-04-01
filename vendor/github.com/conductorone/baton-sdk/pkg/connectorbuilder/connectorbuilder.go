@@ -451,6 +451,7 @@ func NewConnector(ctx context.Context, in interface{}, opts ...Opt) (types.Conne
 
 		for _, rb := range c.ResourceSyncers(ctx) {
 			rType := rb.ResourceType(ctx)
+			fmt.Println(rType)
 			if _, ok := ret.resourceBuilders[rType.Id]; ok {
 				return nil, fmt.Errorf("error: duplicate resource type found for resource builder %s", rType.Id)
 			}
