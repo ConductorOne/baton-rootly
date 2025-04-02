@@ -279,9 +279,6 @@ github.com/go-viper/mapstructure/v2/internal/errors
 ## explicit; go 1.17
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
-# github.com/google/jsonapi v1.0.0
-## explicit
-github.com/google/jsonapi
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid

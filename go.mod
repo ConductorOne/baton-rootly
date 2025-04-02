@@ -7,7 +7,6 @@ toolchain go1.23.7
 require (
 	github.com/conductorone/baton-sdk v0.2.89
 	github.com/ennyjfrick/ruleguard-logfatal v0.0.2
-	github.com/google/jsonapi v1.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
 	github.com/spf13/viper v1.20.1
