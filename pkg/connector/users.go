@@ -9,6 +9,8 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	sdkResource "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 )
 
 type userBuilder struct {
@@ -23,17 +25,34 @@ func (o *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
 // List returns all the users from the database as resource objects.
 // Users include a UserTrait because they are the 'shape' of a standard user.
 func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	// TODO: Parse pagination token if needed
+	logger := ctxzap.Extract(ctx)
+	logger.Debug(
+		"Starting call to Users.List",
+		zap.String("pToken", pToken.Token),
+	)
+
+	// set up pagination
+	bag := &pagination.Bag{}
+	err := bag.Unmarshal(pToken.Token)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	// initialize pagination state if needed
+	if bag.Current() == nil {
+		bag.Push(pagination.PageState{
+			ResourceTypeID: o.resourceType.Id,
+		})
+	}
 
 	// fetch users from the Rootly API with pagination
-	users, nextPage, err := o.client.GetUsers(ctx, pToken)
+	users, token, err := o.client.GetUsers(ctx, bag.PageToken())
 	if err != nil {
 		return nil, "", nil, err
 	}
 
+	// create user resources using the SDK
 	var resources []*v2.Resource
 	for _, user := range users {
-		// create the user resource using the SDK helper
 		userResource, err := sdkResource.NewUserResource(
 			getBestName(user.Attributes),
 			userResourceType,
@@ -46,6 +65,12 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		}
 
 		resources = append(resources, userResource)
+	}
+
+	// set the next page token
+	nextPage, err := bag.NextToken(token)
+	if err != nil {
+		return nil, "", nil, err
 	}
 
 	return resources, nextPage, nil, nil

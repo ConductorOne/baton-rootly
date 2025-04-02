@@ -6,25 +6,26 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )
 
 const (
-	BaseURLStr       = "https://api.rootly.com"
-	UsersAPIEndpoint = "/v1/users"
+	BaseURLStr        = "https://api.rootly.com"
+	UsersAPIEndpoint  = "/v1/users"
+	ResourcesPageSize = 200
 )
 
 type Client struct {
-	httpClient *uhttp.BaseHttpClient
-	baseURL    *url.URL
-	apiKey     string
+	httpClient        *uhttp.BaseHttpClient
+	baseURL           *url.URL
+	apiKey            string
+	resourcesPageSize int
 }
 
 // NewClient creates a new Rootly client.
-func NewClient(ctx context.Context, apiKey string) (*Client, error) {
+func NewClient(ctx context.Context, apiKey string, resourcesPageSize int) (*Client, error) {
 	httpClient, err := uhttp.NewBaseHttpClientWithContext(ctx, http.DefaultClient)
 	if err != nil {
 		return nil, err
@@ -39,9 +40,10 @@ func NewClient(ctx context.Context, apiKey string) (*Client, error) {
 	// as it provides automatic rate limiting handling, error wrapping with gRPC status codes,
 	// and built-in GET response caching
 	return &Client{
-		httpClient: httpClient,
-		baseURL:    baseURL,
-		apiKey:     apiKey,
+		httpClient:        httpClient,
+		baseURL:           baseURL,
+		apiKey:            apiKey,
+		resourcesPageSize: resourcesPageSize,
 	}, nil
 }
 
@@ -108,18 +110,52 @@ func (c *Client) generateURL(
 	return output
 }
 
-func (c *Client) GetUsers(ctx context.Context, _ *pagination.Token) ([]User, string, error) {
-	// TODO(steve) implement with pagination
+// generateInitialPaginationParams returns a map of query param inputs for the 0th page of size ResourcesPageSize.
+func (c *Client) generateInitialPaginationParams() map[string]interface{} {
+	return map[string]interface{}{
+		"page[number]": 0,
+		"page[size]":   c.resourcesPageSize,
+	}
+}
+
+func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, error) {
+	logger := ctxzap.Extract(ctx)
+	var parsedURL *url.URL
+	var err error
+	if pToken == "" {
+		// this is the first paginated request to this endpoint
+		parsedURL = c.generateURL(UsersAPIEndpoint, c.generateInitialPaginationParams())
+		logger.Debug(
+			"Generated first paginated URL",
+			zap.String("parsedURL", parsedURL.String()),
+		)
+	} else {
+		// this is not the first request to this endpoint
+		// use the token string, ie a full URL with params already populated based on the prior request
+		parsedURL, err = url.Parse(pToken)
+		if err != nil {
+			return nil, "", err
+		}
+		logger.Debug(
+			"Parsed token for paginated URL",
+			zap.String("parsedURL", parsedURL.String()),
+		)
+	}
+
 	var resp UsersResponse
-	_, err := c.doRequest(
+	_, err = c.doRequest(
 		ctx,
 		http.MethodGet,
-		c.generateURL(UsersAPIEndpoint, nil),
+		parsedURL,
 		nil,
 		&resp,
 	)
 	if err != nil {
 		return nil, "", err
 	}
-	return resp.Data, "", nil
+	logger.Debug(
+		"Paginated URL for the next request",
+		zap.String("resp.Links.Next", resp.Links.Next),
+	)
+	return resp.Data, resp.Links.Next, nil
 }
