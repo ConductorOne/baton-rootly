@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"time"
 
 	"github.com/conductorone/baton-rootly/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -34,7 +35,7 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	for _, user := range users {
 		// create the user resource using the SDK helper
 		userResource, err := sdkResource.NewUserResource(
-			getBestName(user),
+			getBestName(user.Attributes),
 			userResourceType,
 			user.ID,
 			getUserTraitOptions(user),
@@ -50,48 +51,57 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	return resources, nextPage, nil, nil
 }
 
-// getUserTraitOptions returns a list of UserTraitOption based on the available fields for a Rootly user.
+// getUserTraitOptions returns a list of UserTraitOption's based on the available fields for a Rootly user.
 func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
+	traitOpts := []sdkResource.UserTraitOption{
+		sdkResource.WithEmail(user.Attributes.Email, true),
+		// always set status to enabled, since Rootly doesn't allow for disabled user status
+		sdkResource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
+		sdkResource.WithUserProfile(getUserProfile(user)),
+	}
+	if t, err := time.Parse(time.RFC3339, user.Attributes.CreatedAt); err == nil {
+		traitOpts = append(traitOpts, sdkResource.WithCreatedAt(t))
+	}
+	return traitOpts
+}
+
+// getUserProfile builds a map of profile fields from the available user fields.
+func getUserProfile(user client.User) map[string]interface{} {
 	// required Rootly fields
 	profile := map[string]interface{}{
 		"user_id":    user.ID,
-		"updated_at": user.CreatedAt,
+		"updated_at": user.Attributes.CreatedAt,
 	}
+
 	// optional Rootly fields
-	if user.Name != "" {
-		profile["name"] = user.Name
+	if user.Attributes.Name != "" {
+		profile["name"] = user.Attributes.Name
 	}
-	if user.FullName != "" {
-		profile["full_name"] = user.FullName
-		first, last := sdkResource.SplitFullName(user.FullName)
+	if user.Attributes.FullName != "" {
+		profile["full_name"] = user.Attributes.FullName
+		first, last := sdkResource.SplitFullName(user.Attributes.FullName)
 		profile["first_name"] = first
 		profile["last_name"] = last
 	}
-	if user.SlackID != "" {
-		profile["slack_id"] = user.SlackID
+	if user.Attributes.SlackID != "" {
+		profile["slack_id"] = user.Attributes.SlackID
 	}
-	if user.Phone != "" {
-		profile["phone"] = user.Phone
+	if user.Attributes.Phone != "" {
+		profile["phone"] = user.Attributes.Phone
 	}
-	return []sdkResource.UserTraitOption{
-		sdkResource.WithEmail(user.Email, true),
-		// always set status to enabled, since Rootly doesn't allow for disabled user status
-		sdkResource.WithStatus(v2.UserTrait_Status_STATUS_ENABLED),
-		sdkResource.WithCreatedAt(user.CreatedAt),
-		sdkResource.WithUserProfile(profile),
-	}
+	return profile
 }
 
 // getBestName checks the user fields for the best name-like field that is also populated.
 // Defaults to email as a fallback, which is a required field in Rootly.
-func getBestName(user client.User) string {
-	if user.Name != "" {
-		return user.Name
+func getBestName(userAttr client.UserAttributes) string {
+	if userAttr.Name != "" {
+		return userAttr.Name
 	}
-	if user.FullName != "" {
-		return user.FullName
+	if userAttr.FullName != "" {
+		return userAttr.FullName
 	}
-	return user.Email
+	return userAttr.Email
 }
 
 // Entitlements always returns an empty slice for users.
