@@ -4,6 +4,7 @@ import "time"
 
 type User struct {
 	ID        string    `jsonapi:"primary,id"`
+	Type      string    `jsonapi:"primary,type"`
 	Name      string    `jsonapi:"attr,name"`
 	Email     string    `jsonapi:"attr,email"`
 	FullName  string    `jsonapi:"attr,full_name"`

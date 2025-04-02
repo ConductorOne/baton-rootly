@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -101,14 +102,15 @@ func withVndApiJSONResponse(response interface{}) uhttp.DoOption {
 	}
 }
 
-// doRequest is a helper for taking various request inputs, issues a client request, and handling the response.
+// doRequest is a helper for taking various request inputs, issuing a JSON:API client request, and handling
+// the response. It does not handle any response body unmarshalling, instead leaving that to the caller,
+// given the signature differences between jsonapi.UnmarshalPayload and jsonapi.UnmarshalManyPayload.
 func (c *Client) doRequest(
 	ctx context.Context,
 	method string,
 	url *url.URL,
 	payload interface{},
-	target interface{},
-) (string, error) {
+) (*http.Response, string, error) {
 	l := ctxzap.Extract(ctx)
 
 	// create the request
@@ -121,21 +123,16 @@ func (c *Client) doRequest(
 	}
 	req, err := c.httpClient.NewRequest(ctx, method, url, reqOptions...)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	// do the request and handle the response
 	l.Debug("sending request", zap.String("url", url.String()), zap.String("method", method))
-	var respOptions []uhttp.DoOption
-	if target != nil {
-		respOptions = append(respOptions, withVndApiJSONResponse(target))
-	}
-	resp, err := c.httpClient.Do(req, respOptions...)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
-	defer resp.Body.Close()
-	return "", nil
+	return resp, "", nil
 }
 
 func (c *Client) generateURL(
@@ -163,16 +160,29 @@ func (c *Client) generateURL(
 
 func (c *Client) GetUsers(ctx context.Context, _ *pagination.Token) ([]User, string, error) {
 	// TODO(steve) implement with pagination
-	var users []User
-	_, err := c.doRequest(
+	resp, _, err := c.doRequest(
 		ctx,
 		http.MethodGet,
 		c.generateURL(UsersAPIEndpoint, nil),
 		nil,
-		&users,
 	)
 	if err != nil {
 		return nil, "", err
 	}
-	return users, "", nil
+	defer resp.Body.Close()
+	userType := reflect.TypeOf((*User)(nil)).Elem()
+	l := ctxzap.Extract(ctx)
+	l.Debug(userType.String())
+	users, err := jsonapi.UnmarshalManyPayload(resp.Body, userType)
+	if err != nil {
+		// to print the response, set the envvar BATON_DEBUG_PRINT_RESPONSE_BODY as non-empty, instead
+		return nil, "", fmt.Errorf("failed to unmarshal json response: %w. status code: %d", err, resp.StatusCode)
+	}
+	var typedUsers []User
+	for _, user := range users {
+		l.Debug("user: ", zap.String("user", fmt.Sprintf("%v", user)))
+		l.Debug("user: ", zap.String("user", fmt.Sprintf("%v", user.(User))))
+		typedUsers = append(typedUsers, user.(User))
+	}
+	return typedUsers, "", nil
 }
