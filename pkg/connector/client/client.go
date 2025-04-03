@@ -24,16 +24,25 @@ type Client struct {
 	resourcesPageSize int
 }
 
-// NewClient creates a new Rootly client.
-func NewClient(ctx context.Context, apiKey string, resourcesPageSize int) (*Client, error) {
+// NewClient creates a new Rootly client. Allows for a configurable base URL, API key, and resources page size.
+func NewClient(ctx context.Context, baseURL string, apiKey string, resourcesPageSize int) (*Client, error) {
 	httpClient, err := uhttp.NewBaseHttpClientWithContext(ctx, http.DefaultClient)
 	if err != nil {
 		return nil, err
 	}
 
-	baseURL, err := url.Parse(BaseURLStr)
+	// set a default base URL if none is provided
+	if baseURL == "" {
+		baseURL = BaseURLStr
+	}
+	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
+	}
+
+	// set a default resources page size if none is provided
+	if resourcesPageSize <= 0 {
+		resourcesPageSize = ResourcesPageSize
 	}
 
 	// This is preferred over using the regular http.Client directly
@@ -41,7 +50,7 @@ func NewClient(ctx context.Context, apiKey string, resourcesPageSize int) (*Clie
 	// and built-in GET response caching
 	return &Client{
 		httpClient:        httpClient,
-		baseURL:           baseURL,
+		baseURL:           parsedURL,
 		apiKey:            apiKey,
 		resourcesPageSize: resourcesPageSize,
 	}, nil
@@ -55,7 +64,7 @@ func (c *Client) doRequest(
 	url *url.URL,
 	requestBody interface{},
 	target interface{},
-) (string, error) {
+) error {
 	l := ctxzap.Extract(ctx)
 
 	// create the request
@@ -68,7 +77,7 @@ func (c *Client) doRequest(
 	}
 	req, err := c.httpClient.NewRequest(ctx, method, url, reqOptions...)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// do the request and handle the response
@@ -82,9 +91,9 @@ func (c *Client) doRequest(
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return "", err
+		return err
 	}
-	return "", nil
+	return nil
 }
 
 func (c *Client) generateURL(
@@ -110,25 +119,18 @@ func (c *Client) generateURL(
 	return output
 }
 
-// generateInitialPaginationParams returns a map of query param inputs for the 0th page of size ResourcesPageSize.
-func (c *Client) generateInitialPaginationParams() map[string]interface{} {
-	return map[string]interface{}{
-		"page[number]": 0,
-		"page[size]":   c.resourcesPageSize,
-	}
-}
-
+// GetUsers fetches users from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, error) {
 	logger := ctxzap.Extract(ctx)
 	var parsedURL *url.URL
 	var err error
 	if pToken == "" {
 		// this is the first paginated request to this endpoint
-		parsedURL = c.generateURL(UsersAPIEndpoint, c.generateInitialPaginationParams())
-		logger.Debug(
-			"Generated first paginated URL",
-			zap.String("parsedURL", parsedURL.String()),
-		)
+		parsedURL = c.generateURL(UsersAPIEndpoint, map[string]interface{}{
+			"page[number]": 1,
+			"page[size]":   c.resourcesPageSize,
+		})
+		logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
 	} else {
 		// this is not the first request to this endpoint
 		// use the token string, ie a full URL with params already populated based on the prior request
@@ -136,14 +138,11 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 		if err != nil {
 			return nil, "", err
 		}
-		logger.Debug(
-			"Parsed token for paginated URL",
-			zap.String("parsedURL", parsedURL.String()),
-		)
+		logger.Debug("Parsed token for paginated URL", zap.String("parsedURL", parsedURL.String()))
 	}
 
 	var resp UsersResponse
-	_, err = c.doRequest(
+	err = c.doRequest(
 		ctx,
 		http.MethodGet,
 		parsedURL,
@@ -153,9 +152,6 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 	if err != nil {
 		return nil, "", err
 	}
-	logger.Debug(
-		"Paginated URL for the next request",
-		zap.String("resp.Links.Next", resp.Links.Next),
-	)
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
 }

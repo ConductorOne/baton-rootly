@@ -44,7 +44,7 @@ func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 
 // New returns a new instance of the connector.
 func New(ctx context.Context, apiKey string) (*Connector, error) {
-	rootlyClient, err := client.NewClient(ctx, apiKey, client.ResourcesPageSize)
+	rootlyClient, err := client.NewClient(ctx, client.BaseURLStr, apiKey, client.ResourcesPageSize)
 	if err != nil {
 		return nil, err
 	}
