@@ -42,21 +42,25 @@ func main() {
 	}
 }
 
+// getConnector initializes and returns the connector.
 func getConnector(ctx context.Context, v *viper.Viper) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
 	if err := ValidateConfig(v); err != nil {
 		return nil, err
 	}
 
-	cb, err := connector.New(ctx)
+	apiKey := v.GetString(APIKeyField.FieldName)
+
+	c, err := connector.New(ctx, apiKey)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
 	}
-	c, err := connectorbuilder.NewConnector(ctx, cb)
+
+	server, err := connectorbuilder.NewConnector(ctx, c)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
 	}
-	return c, nil
+	return server, nil
 }
