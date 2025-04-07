@@ -24,7 +24,7 @@ jobs:
         run: go build -o connector ./cmd/baton-rootly
 
       - name: Run and save output
-        run: ./connector capabilities > baton_capabilities.json
+        run: ./connector --api-key="test" capabilities > baton_capabilities.json
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
