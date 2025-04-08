@@ -398,7 +398,7 @@ func TestClient_GetTeams(t *testing.T) {
 			},
 		},
 	}
-	expectedNextToken := "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+	expectedNextToken := "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1" //nolint:gosec,nolintlint
 	server := httptest.NewServer(
 		http.HandlerFunc(
 			func(writer http.ResponseWriter, request *http.Request) {
