@@ -132,6 +132,84 @@ const (
         "total_pages": 1
     }
 }`
+	teamsListResultsPage1of4Size1 = `{
+    "data": [
+        {
+            "id": "411a07db-196a-4052-bfa3-e43e5adceecf",
+            "type": "groups",
+            "attributes": {
+                "slug": "sre",
+                "name": "SRE",
+                "description": "The go-to team for all incidents.",
+                "color": "#F5D9C4",
+                "position": 2,
+                "notify_emails": ["test1@example.com", "test2@example.com"],
+                "slack_channels": [
+					{
+						"id": "test-channel-id",
+						"name": "test-channel-name"
+					}
+				],
+                "slack_aliases": [
+					{
+						"id": "test-alias-id",
+						"name": "test-alias-name"
+					}
+				],
+				"pagerduty_id": "test-pagerduty-id",
+				"pagerduty_service_id": "test-pagerduty-service-id",
+				"backstage_id": "test-backstage-id",
+				"external_id": "test-external-id",
+				"opsgenie_id": "test-opsgenie-id",
+				"victor_ops_id": "test-victor-ops-id",
+				"pagertree_id": "test-pagertree-id",
+				"cortex_id": "test-cortex-id",
+				"service_now_ci_sys_id": "test-service-now-ci-sys-id",
+                "user_ids": [
+                    96913,
+                    97487
+                ],
+                "admin_ids": [
+                    96913
+                ],
+                "incidents_count": 0,
+                "alert_urgency_id": "1fa6b95d-fd26-4b5c-9d81-2af74b28e2ec",
+                "alerts_email_enabled": true,
+                "alerts_email_address": "group-1cb9e48cc735b4473def0e01f97f19e8@email.rootly.com",
+                "created_at": "2025-03-28T07:05:55.007-07:00",
+                "updated_at": "2025-04-07T07:54:11.604-07:00"
+            },
+            "relationships": {
+                "users": {
+                    "data": [
+                        {
+                            "id": "96913",
+                            "type": "users"
+                        },
+                        {
+                            "id": "97487",
+                            "type": "users"
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "links": {
+        "self": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "first": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "prev": null,
+        "next": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+        "last": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=4&page%5Bsize%5D=1"
+    },
+    "meta": {
+        "current_page": 1,
+        "next_page": 2,
+        "prev_page": null,
+        "total_count": 4,
+        "total_pages": 4
+    }
+}`
 )
 
 func TestClient_GetUsers(t *testing.T) {
@@ -300,6 +378,133 @@ func TestClient_GetUsers(t *testing.T) {
 			require.Len(t, users, len(tc.want.users))
 			require.ElementsMatch(t, tc.want.users, users)
 			require.Equal(t, tc.want.nextToken, nextPageToken)
+		})
+	}
+}
+
+func TestClient_GetTeams(t *testing.T) {
+	const testPageSize = 1
+	expectedTeams := []Team{
+		{
+			ID:   "411a07db-196a-4052-bfa3-e43e5adceecf",
+			Type: "groups",
+			Attributes: TeamAttributes{
+				Name:         "SRE",
+				Description:  "The go-to team for all incidents.",
+				NotifyEmails: []string{"test1@example.com", "test2@example.com"},
+				SlackChannels: []BasicAttribute{
+					{
+						ID:   "test-channel-id",
+						Name: "test-channel-name",
+					},
+				},
+				SlackAliases: []BasicAttribute{
+					{
+						ID:   "test-alias-id",
+						Name: "test-alias-name",
+					},
+				},
+				PagerdutyID:        "test-pagerduty-id",
+				PagerdutyServiceID: "test-pagerduty-service-id",
+				BackstageID:        "test-backstage-id",
+				ExternalID:         "test-external-id",
+				OpsGenieID:         "test-opsgenie-id",
+				VictorOpsID:        "test-victor-ops-id",
+				PagertreeID:        "test-pagertree-id",
+				CortexID:           "test-cortex-id",
+				ServiceNowCISysID:  "test-service-now-ci-sys-id",
+				UserIDs:            []int{96913, 97487},
+				AdminIDs:           []int{96913},
+				AlertUrgencyID:     "1fa6b95d-fd26-4b5c-9d81-2af74b28e2ec",
+				AlertsEmailEnabled: true,
+				AlertsEmailAddress: "group-1cb9e48cc735b4473def0e01f97f19e8@email.rootly.com",
+				UpdatedAt:          "2025-04-07T07:54:11.604-07:00",
+				CreatedAt:          "2025-03-28T07:05:55.007-07:00",
+			},
+		},
+	}
+	expectedNextToken := "https://api.rootly.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(writer http.ResponseWriter, request *http.Request) {
+				writer.Header().Set(uhttp.ContentType, "application/json")
+				writer.WriteHeader(http.StatusOK)
+				_, err := writer.Write([]byte(teamsListResultsPage1of4Size1))
+				if err != nil {
+					return
+				}
+			},
+		),
+	)
+	defer server.Close()
+
+	ctx := context.Background()
+	client, err := NewClient(
+		ctx,
+		server.URL,
+		testAPIKey,
+		testPageSize,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	teams, nextPageToken, err := client.GetTeams(ctx, "") // empty page token
+	require.Nil(t, err)
+
+	require.Len(t, teams, testPageSize)
+	require.ElementsMatch(t, expectedTeams, teams)
+	require.Equal(t, expectedNextToken, nextPageToken)
+}
+
+func TestClient_generateCurrentPaginatedURL(t *testing.T) {
+	ctx := context.Background()
+	client, err := NewClient(ctx, testBaseURLStr, testAPIKey, 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type args struct {
+		pToken string
+		path   string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *url.URL
+	}{
+		{
+			name: "empty page token, generates url from path and client config values",
+			args: args{
+				pToken: "",
+				path:   "/v1/test",
+			},
+			want: &url.URL{
+				Scheme:   "https",
+				Host:     "api.example.com",
+				Path:     "v1/test",
+				RawQuery: "page%5Bnumber%5D=1&page%5Bsize%5D=6",
+			},
+		},
+		{
+			name: "valid page token, generates url fully from the token",
+			args: args{
+				pToken: "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=4",
+				path:   "/v1/test",
+			},
+			want: &url.URL{
+				Scheme:   "https",
+				Host:     "api.example.com",
+				Path:     "/v1/teams",
+				RawQuery: "page%5Bnumber%5D=2&page%5Bsize%5D=4",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := client.generateCurrentPaginatedURL(ctx, tc.args.pToken, tc.args.path)
+			// only get an error if the provided path in unparseable, not an interesting test case
+			require.Nil(t, err)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
