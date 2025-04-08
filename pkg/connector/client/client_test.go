@@ -135,7 +135,7 @@ const (
 	teamsListResultsPage1of4Size1 = `{
     "data": [
         {
-            "id": "411a07db-196a-4052-bfa3-e43e5adceecf",
+            "id": "sre-team-guid",
             "type": "groups",
             "attributes": {
                 "slug": "sre",
@@ -145,26 +145,26 @@ const (
                 "position": 2,
                 "notify_emails": ["test1@example.com", "test2@example.com"],
                 "slack_channels": [
-					{
-						"id": "test-channel-id",
-						"name": "test-channel-name"
-					}
-				],
+                    {
+                        "id": "test-channel-id",
+                        "name": "test-channel-name"
+                    }
+                ],
                 "slack_aliases": [
-					{
-						"id": "test-alias-id",
-						"name": "test-alias-name"
-					}
-				],
-				"pagerduty_id": "test-pagerduty-id",
-				"pagerduty_service_id": "test-pagerduty-service-id",
-				"backstage_id": "test-backstage-id",
-				"external_id": "test-external-id",
-				"opsgenie_id": "test-opsgenie-id",
-				"victor_ops_id": "test-victor-ops-id",
-				"pagertree_id": "test-pagertree-id",
-				"cortex_id": "test-cortex-id",
-				"service_now_ci_sys_id": "test-service-now-ci-sys-id",
+                    {
+                        "id": "test-alias-id",
+                        "name": "test-alias-name"
+                    }
+                ],
+                "pagerduty_id": "test-pagerduty-id",
+                "pagerduty_service_id": "test-pagerduty-service-id",
+                "backstage_id": "test-backstage-id",
+                "external_id": "test-external-id",
+                "opsgenie_id": "test-opsgenie-id",
+                "victor_ops_id": "test-victor-ops-id",
+                "pagertree_id": "test-pagertree-id",
+                "cortex_id": "test-cortex-id",
+                "service_now_ci_sys_id": "test-service-now-ci-sys-id",
                 "user_ids": [
                     96913,
                     97487
@@ -173,9 +173,9 @@ const (
                     96913
                 ],
                 "incidents_count": 0,
-                "alert_urgency_id": "1fa6b95d-fd26-4b5c-9d81-2af74b28e2ec",
+                "alert_urgency_id": "some-guid",
                 "alerts_email_enabled": true,
-                "alerts_email_address": "group-1cb9e48cc735b4473def0e01f97f19e8@email.rootly.com",
+                "alerts_email_address": "group-test-test@email.rootly.com",
                 "created_at": "2025-03-28T07:05:55.007-07:00",
                 "updated_at": "2025-04-07T07:54:11.604-07:00"
             },
@@ -386,7 +386,7 @@ func TestClient_GetTeams(t *testing.T) {
 	const testPageSize = 1
 	expectedTeams := []Team{
 		{
-			ID:   "411a07db-196a-4052-bfa3-e43e5adceecf",
+			ID:   "sre-team-guid",
 			Type: "groups",
 			Attributes: TeamAttributes{
 				Name:         "SRE",
@@ -415,9 +415,9 @@ func TestClient_GetTeams(t *testing.T) {
 				ServiceNowCISysID:  "test-service-now-ci-sys-id",
 				UserIDs:            []int{96913, 97487},
 				AdminIDs:           []int{96913},
-				AlertUrgencyID:     "1fa6b95d-fd26-4b5c-9d81-2af74b28e2ec",
+				AlertUrgencyID:     "some-guid",
 				AlertsEmailEnabled: true,
-				AlertsEmailAddress: "group-1cb9e48cc735b4473def0e01f97f19e8@email.rootly.com",
+				AlertsEmailAddress: "group-test-test@email@email.rootly.com",
 				UpdatedAt:          "2025-04-07T07:54:11.604-07:00",
 				CreatedAt:          "2025-03-28T07:05:55.007-07:00",
 			},
