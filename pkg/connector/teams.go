@@ -135,12 +135,6 @@ func getTeamTraitOptions(team client.Team) []sdkResource.GroupTraitOption {
 	if team.Attributes.ServiceNowCISysID != "" {
 		profile["service_now_ci_sys_id"] = team.Attributes.ServiceNowCISysID
 	}
-	if len(team.Attributes.UserIDs) != 0 {
-		profile["user_ids"] = team.Attributes.UserIDs
-	}
-	if len(team.Attributes.AdminIDs) != 0 {
-		profile["admin_ids"] = team.Attributes.AdminIDs
-	}
 	if team.Attributes.AlertUrgencyID != "" {
 		profile["alert_urgency_id"] = team.Attributes.AlertUrgencyID
 	}
