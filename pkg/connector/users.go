@@ -18,7 +18,7 @@ type userBuilder struct {
 	client       *client.Client
 }
 
-func (o *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
+func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return o.resourceType
 }
 
@@ -95,7 +95,7 @@ func getUserProfile(user client.User) map[string]interface{} {
 	// required Rootly fields
 	profile := map[string]interface{}{
 		"user_id":    user.ID,
-		"updated_at": user.Attributes.CreatedAt,
+		"updated_at": user.Attributes.UpdatedAt,
 	}
 
 	// optional Rootly fields
@@ -130,12 +130,12 @@ func getBestName(userAttr client.UserAttributes) string {
 }
 
 // Entitlements always returns an empty slice for users.
-func (o *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (o *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }
 
 // Grants always returns an empty slice for users since they don't have any entitlements.
-func (o *userBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (o *userBuilder) Grants(ctx context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }
 
