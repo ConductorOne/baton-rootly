@@ -42,27 +42,12 @@ type BasicAttribute struct {
 	Name string `json:"name"`
 }
 type TeamAttributes struct {
-	Name               string           `json:"name"`
-	Description        string           `json:"description"`
-	NotifyEmails       []string         `json:"notify_emails"`
-	SlackChannels      []BasicAttribute `json:"slack_channels"`
-	SlackAliases       []BasicAttribute `json:"slack_aliases"`
-	PagerdutyID        string           `json:"pagerduty_id"`
-	PagerdutyServiceID string           `json:"pagerduty_service_id"`
-	BackstageID        string           `json:"backstage_id"`
-	ExternalID         string           `json:"external_id"`
-	OpsGenieID         string           `json:"opsgenie_id"`
-	VictorOpsID        string           `json:"victor_ops_id"`
-	PagertreeID        string           `json:"pagertree_id"`
-	CortexID           string           `json:"cortex_id"`
-	ServiceNowCISysID  string           `json:"service_now_ci_sys_id"`
-	UserIDs            []int            `json:"user_ids"`
-	AdminIDs           []int            `json:"admin_ids"`
-	AlertUrgencyID     string           `json:"alert_urgency_id"`
-	AlertsEmailEnabled bool             `json:"alerts_email_enabled"`
-	AlertsEmailAddress string           `json:"alerts_email_address"`
-	UpdatedAt          string           `json:"updated_at"`
-	CreatedAt          string           `json:"created_at"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	UserIDs     []int  `json:"user_ids"`
+	AdminIDs    []int  `json:"admin_ids"`
+	UpdatedAt   string `json:"updated_at"`
+	CreatedAt   string `json:"created_at"`
 }
 
 type Team struct {

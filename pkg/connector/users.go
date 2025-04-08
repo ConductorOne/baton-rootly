@@ -87,6 +87,13 @@ func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 	if t, err := time.Parse(time.RFC3339, user.Attributes.CreatedAt); err == nil {
 		traitOpts = append(traitOpts, sdkResource.WithCreatedAt(t))
 	}
+	if user.Attributes.FullName != "" {
+		first, last := sdkResource.SplitFullName(user.Attributes.FullName)
+		traitOpts = append(traitOpts, sdkResource.WithStructuredName(&v2.UserTrait_StructuredName{
+			GivenName:  first,
+			FamilyName: last,
+		}))
+	}
 	return traitOpts
 }
 
@@ -99,15 +106,6 @@ func getUserProfile(user client.User) map[string]interface{} {
 	}
 
 	// optional Rootly fields
-	if user.Attributes.Name != "" {
-		profile["name"] = user.Attributes.Name
-	}
-	if user.Attributes.FullName != "" {
-		profile["full_name"] = user.Attributes.FullName
-		first, last := sdkResource.SplitFullName(user.Attributes.FullName)
-		profile["first_name"] = first
-		profile["last_name"] = last
-	}
 	if user.Attributes.SlackID != "" {
 		profile["slack_id"] = user.Attributes.SlackID
 	}

@@ -95,52 +95,8 @@ func getTeamTraitOptions(team client.Team) []sdkResource.GroupTraitOption {
 	}
 
 	// optional Rootly fields
-	// TODO: just use JSON marshaling for this? downside would be coupling ourselves to the Rootly API field names
 	if team.Attributes.Description != "" {
 		profile["description"] = team.Attributes.Description
-	}
-	if len(team.Attributes.NotifyEmails) != 0 {
-		profile["notify_emails"] = team.Attributes.NotifyEmails
-	}
-	if len(team.Attributes.SlackChannels) != 0 {
-		profile["slack_channels"] = team.Attributes.SlackChannels
-	}
-	if len(team.Attributes.SlackAliases) != 0 {
-		profile["slack_aliases"] = team.Attributes.SlackAliases
-	}
-	if team.Attributes.PagerdutyID != "" {
-		profile["pagerduty_id"] = team.Attributes.PagerdutyID
-	}
-	if team.Attributes.PagerdutyServiceID != "" {
-		profile["pagerduty_service_id"] = team.Attributes.PagerdutyServiceID
-	}
-	if team.Attributes.BackstageID != "" {
-		profile["backstage_id"] = team.Attributes.BackstageID
-	}
-	if team.Attributes.ExternalID != "" {
-		profile["external_id"] = team.Attributes.ExternalID
-	}
-	if team.Attributes.OpsGenieID != "" {
-		profile["opsgenie_id"] = team.Attributes.OpsGenieID
-	}
-	if team.Attributes.VictorOpsID != "" {
-		profile["victor_ops_id"] = team.Attributes.VictorOpsID
-	}
-	if team.Attributes.PagertreeID != "" {
-		profile["pagertree_id"] = team.Attributes.PagertreeID
-	}
-	if team.Attributes.CortexID != "" {
-		profile["cortex_id"] = team.Attributes.CortexID
-	}
-	if team.Attributes.ServiceNowCISysID != "" {
-		profile["service_now_ci_sys_id"] = team.Attributes.ServiceNowCISysID
-	}
-	if team.Attributes.AlertUrgencyID != "" {
-		profile["alert_urgency_id"] = team.Attributes.AlertUrgencyID
-	}
-	if team.Attributes.AlertsEmailAddress != "" {
-		profile["alerts_email_address"] = team.Attributes.AlertsEmailAddress
-		profile["alerts_email_enabled"] = team.Attributes.AlertsEmailEnabled
 	}
 
 	return []sdkResource.GroupTraitOption{
