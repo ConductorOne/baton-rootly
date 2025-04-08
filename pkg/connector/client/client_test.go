@@ -34,11 +34,11 @@ const (
         }
     ],
     "links": {
-        "self": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
-        "first": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "self": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "first": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
         "prev": null,
-        "next": "https://api.rootly.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
-        "last": "https://api.rootly.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+        "next": "https://api.example.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+        "last": "https://api.example.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1"
     },
     "meta": {
         "current_page": 1,
@@ -68,11 +68,11 @@ const (
         }
     ],
     "links": {
-        "self": "https://api.rootly.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
-        "first": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
-        "prev": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "self": "https://api.example.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+        "first": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "prev": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=1",
         "next": null,
-        "last": "https://api.rootly.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+        "last": "https://api.example.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1"
     },
     "meta": {
         "current_page": 2,
@@ -118,11 +118,11 @@ const (
         }
     ],
     "links": {
-        "self": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2",
-        "first": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2",
+        "self": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2",
+        "first": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2",
         "prev": null,
         "next": null,
-        "last": "https://api.rootly.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2"
+        "last": "https://api.example.com/v1/users?page%5Bnumber%5D=1&page%5Bsize%5D=2"
     },
     "meta": {
         "current_page": 1,
@@ -196,11 +196,11 @@ const (
         }
     ],
     "links": {
-        "self": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
-        "first": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "self": "https://api.example.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "first": "https://api.example.com/v1/teams?page%5Bnumber%5D=1&page%5Bsize%5D=1",
         "prev": null,
-        "next": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1",
-        "last": "https://api.rootly.com/v1/teams?page%5Bnumber%5D=4&page%5Bsize%5D=1"
+        "next": "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+        "last": "https://api.example.com/v1/teams?page%5Bnumber%5D=4&page%5Bsize%5D=1"
     },
     "meta": {
         "current_page": 1,
@@ -258,7 +258,7 @@ func TestClient_GetUsers(t *testing.T) {
 						},
 					},
 				},
-				nextToken:   "https://api.rootly.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+				nextToken:   "https://api.example.com/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
 				expectError: false,
 			},
 		},
@@ -423,7 +423,7 @@ func TestClient_GetTeams(t *testing.T) {
 			},
 		},
 	}
-	expectedNextToken := "https://api.rootly.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+	expectedNextToken := "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=1"
 	server := httptest.NewServer(
 		http.HandlerFunc(
 			func(writer http.ResponseWriter, request *http.Request) {
