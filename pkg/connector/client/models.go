@@ -36,3 +36,32 @@ type UsersResponse struct {
 	Links Links  `json:"links"`
 	Meta  Meta   `json:"meta"`
 }
+
+type BasicAttribute struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+type TeamAttributes struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	UserIDs     []int  `json:"user_ids"`
+	AdminIDs    []int  `json:"admin_ids"`
+	UpdatedAt   string `json:"updated_at"`
+	CreatedAt   string `json:"created_at"`
+}
+
+type Team struct {
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Attributes TeamAttributes `json:"attributes"`
+}
+
+type TeamsResponse struct {
+	Data  []Team `json:"data"`
+	Links Links  `json:"links"`
+	Meta  Meta   `json:"meta"`
+}
+
+type TeamResponse struct {
+	Data Team `json:"data"`
+}

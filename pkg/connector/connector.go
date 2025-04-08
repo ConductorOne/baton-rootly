@@ -18,7 +18,7 @@ type Connector struct {
 func (d *Connector) ResourceSyncers(ctx context.Context) []connectorbuilder.ResourceSyncer {
 	return []connectorbuilder.ResourceSyncer{
 		newUserBuilder(d.client),
-		// TODO: add role and team builders
+		newTeamBuilder(d.client),
 	}
 }
 

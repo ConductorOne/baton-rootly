@@ -18,7 +18,7 @@ type userBuilder struct {
 	client       *client.Client
 }
 
-func (o *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
+func (o *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return o.resourceType
 }
 
@@ -87,6 +87,13 @@ func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 	if t, err := time.Parse(time.RFC3339, user.Attributes.CreatedAt); err == nil {
 		traitOpts = append(traitOpts, sdkResource.WithCreatedAt(t))
 	}
+	if user.Attributes.FullName != "" {
+		first, last := sdkResource.SplitFullName(user.Attributes.FullName)
+		traitOpts = append(traitOpts, sdkResource.WithStructuredName(&v2.UserTrait_StructuredName{
+			GivenName:  first,
+			FamilyName: last,
+		}))
+	}
 	return traitOpts
 }
 
@@ -95,19 +102,10 @@ func getUserProfile(user client.User) map[string]interface{} {
 	// required Rootly fields
 	profile := map[string]interface{}{
 		"user_id":    user.ID,
-		"updated_at": user.Attributes.CreatedAt,
+		"updated_at": user.Attributes.UpdatedAt,
 	}
 
 	// optional Rootly fields
-	if user.Attributes.Name != "" {
-		profile["name"] = user.Attributes.Name
-	}
-	if user.Attributes.FullName != "" {
-		profile["full_name"] = user.Attributes.FullName
-		first, last := sdkResource.SplitFullName(user.Attributes.FullName)
-		profile["first_name"] = first
-		profile["last_name"] = last
-	}
 	if user.Attributes.SlackID != "" {
 		profile["slack_id"] = user.Attributes.SlackID
 	}
@@ -130,12 +128,12 @@ func getBestName(userAttr client.UserAttributes) string {
 }
 
 // Entitlements always returns an empty slice for users.
-func (o *userBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (o *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }
 
 // Grants always returns an empty slice for users since they don't have any entitlements.
-func (o *userBuilder) Grants(ctx context.Context, resource *v2.Resource, pToken *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (o *userBuilder) Grants(ctx context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -12,9 +13,11 @@ import (
 )
 
 const (
-	BaseURLStr        = "https://api.rootly.com"
-	UsersAPIEndpoint  = "/v1/users"
-	ResourcesPageSize = 200
+	BaseURLStr           = "https://api.rootly.com"
+	ListUsersAPIEndpoint = "/v1/users"
+	ListTeamsAPIEndpoint = "/v1/teams"
+	GetTeamAPIEndpoint   = "/v1/teams/%s"
+	ResourcesPageSize    = 200
 )
 
 type Client struct {
@@ -99,7 +102,9 @@ func (c *Client) doRequest(
 func (c *Client) generateURL(
 	path string,
 	queryParameters map[string]interface{},
+	pathParameters ...string,
 ) *url.URL {
+	// query parameters
 	params := url.Values{}
 	for key, valueAny := range queryParameters {
 		switch value := valueAny.(type) {
@@ -114,31 +119,50 @@ func (c *Client) generateURL(
 		}
 	}
 
+	// path parameters
+	for _, param := range pathParameters {
+		// not perfect, but less error-prone than using fmt.Sprintf which takes any value type and also fails silently
+		path = strings.Replace(path, "%s", param, 1)
+	}
 	output := c.baseURL.JoinPath(path)
 	output.RawQuery = params.Encode()
 	return output
 }
 
+// generateCurrentPaginatedURL either parses the URL from the page token, or generates a new URL
+// with initial pagination if there's no token.
+func (c *Client) generateCurrentPaginatedURL(
+	ctx context.Context,
+	pToken string,
+	path string,
+) (*url.URL, error) {
+	logger := ctxzap.Extract(ctx)
+	if pToken != "" {
+		// this is not the first request to this endpoint
+		// use the token string, ie a full URL with params already populated based on the prior request
+		parsedURL, err := url.Parse(pToken)
+		if err != nil {
+			return nil, err
+		}
+		logger.Debug("Parsed token for paginated URL", zap.String("parsedURL", parsedURL.String()))
+		return parsedURL, nil
+	}
+
+	// otherwise this is the first paginated request to this endpoint
+	parsedURL := c.generateURL(path, map[string]interface{}{
+		"page[number]": 1,
+		"page[size]":   c.resourcesPageSize,
+	})
+	logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
+	return parsedURL, nil
+}
+
 // GetUsers fetches users from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, error) {
 	logger := ctxzap.Extract(ctx)
-	var parsedURL *url.URL
-	var err error
-	if pToken == "" {
-		// this is the first paginated request to this endpoint
-		parsedURL = c.generateURL(UsersAPIEndpoint, map[string]interface{}{
-			"page[number]": 1,
-			"page[size]":   c.resourcesPageSize,
-		})
-		logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
-	} else {
-		// this is not the first request to this endpoint
-		// use the token string, ie a full URL with params already populated based on the prior request
-		parsedURL, err = url.Parse(pToken)
-		if err != nil {
-			return nil, "", err
-		}
-		logger.Debug("Parsed token for paginated URL", zap.String("parsedURL", parsedURL.String()))
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListUsersAPIEndpoint)
+	if err != nil {
+		return nil, "", err
 	}
 
 	var resp UsersResponse
@@ -154,4 +178,51 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 	}
 	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
+}
+
+// GetTeams fetches the teams from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListTeamsAPIEndpoint)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var resp TeamsResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
+}
+
+// GetTeamMemberAndAdminIDs returns a list of member user IDs and admin user IDs for a given team ID.
+func (c *Client) GetTeamMemberAndAdminIDs(
+	ctx context.Context,
+	teamID string,
+) ([]int, []int, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL := c.generateURL(GetTeamAPIEndpoint, nil, teamID)
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp TeamResponse
+	err := c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp.Data.Attributes.UserIDs, resp.Data.Attributes.AdminIDs, nil
 }

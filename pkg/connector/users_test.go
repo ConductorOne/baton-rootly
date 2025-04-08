@@ -70,10 +70,11 @@ func Test_getUserProfile(t *testing.T) {
 				user: client.User{
 					ID: "123",
 					Attributes: client.UserAttributes{
-						CreatedAt: "2023-01-01T00:00:00Z",
+						CreatedAt: "2023-01-01T00:00:00Z", // not captured in profile
+						UpdatedAt: "2023-01-02T00:00:00Z",
 						Name:      "Sam",
-						FullName:  "Sam Testalot",
-						Email:     "sam.testalot@example.com",
+						FullName:  "Sam Testalot",             // not captured in profile
+						Email:     "sam.testalot@example.com", // not captured in profile
 						SlackID:   "@testalot",
 						Phone:     "123-456-7890",
 					},
@@ -81,11 +82,7 @@ func Test_getUserProfile(t *testing.T) {
 			},
 			want: map[string]interface{}{
 				"user_id":    "123",
-				"updated_at": "2023-01-01T00:00:00Z",
-				"name":       "Sam",
-				"full_name":  "Sam Testalot",
-				"first_name": "Sam",
-				"last_name":  "Testalot",
+				"updated_at": "2023-01-02T00:00:00Z",
 				"slack_id":   "@testalot",
 				"phone":      "123-456-7890",
 			},
@@ -96,8 +93,9 @@ func Test_getUserProfile(t *testing.T) {
 				user: client.User{
 					ID: "124",
 					Attributes: client.UserAttributes{
-						CreatedAt: "2023-01-02T00:00:00Z",
-						Email:     "sam.testalot@example.com",
+						CreatedAt: "2023-01-01T00:00:00Z", // not captured in profile
+						UpdatedAt: "2023-01-02T00:00:00Z",
+						Email:     "sam.testalot@example.com", // not captured in profile
 					},
 				},
 			},
@@ -112,18 +110,16 @@ func Test_getUserProfile(t *testing.T) {
 				user: client.User{
 					ID: "125",
 					Attributes: client.UserAttributes{
-						CreatedAt: "2023-01-03T00:00:00Z",
-						FullName:  "Sam Testalot",
-						Email:     "sam.testalot@example.com",
+						CreatedAt: "2023-01-03T00:00:00Z", // not captured in profile
+						UpdatedAt: "2023-01-04T00:00:00Z",
+						FullName:  "Sam Testalot",             // not captured in profile
+						Email:     "sam.testalot@example.com", // not captured in profile
 					},
 				},
 			},
 			want: map[string]interface{}{
 				"user_id":    "125",
-				"updated_at": "2023-01-03T00:00:00Z",
-				"full_name":  "Sam Testalot",
-				"first_name": "Sam",
-				"last_name":  "Testalot",
+				"updated_at": "2023-01-04T00:00:00Z",
 			},
 		},
 	}
