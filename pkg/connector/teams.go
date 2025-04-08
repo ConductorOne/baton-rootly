@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/conductorone/baton-rootly/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -217,7 +218,7 @@ func (o *teamBuilder) Grants(
 			teamMemberEntitlement,
 			&v2.ResourceId{
 				ResourceType: userResourceType.Id,
-				Resource:     memberID,
+				Resource:     strconv.Itoa(memberID),
 			},
 		))
 	}
@@ -228,7 +229,7 @@ func (o *teamBuilder) Grants(
 			teamAdminEntitlement,
 			&v2.ResourceId{
 				ResourceType: userResourceType.Id,
-				Resource:     adminID,
+				Resource:     strconv.Itoa(adminID),
 			},
 		))
 	}

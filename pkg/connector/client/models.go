@@ -56,8 +56,8 @@ type TeamAttributes struct {
 	PagertreeID        string           `json:"pagertree_id"`
 	CortexID           string           `json:"cortex_id"`
 	ServiceNowCISysID  string           `json:"service_now_ci_sys_id"`
-	UserIDs            []string         `json:"user_ids"`
-	AdminIDs           []string         `json:"admin_ids"`
+	UserIDs            []int            `json:"user_ids"`
+	AdminIDs           []int            `json:"admin_ids"`
 	AlertUrgencyID     string           `json:"alert_urgency_id"`
 	AlertsEmailEnabled bool             `json:"alerts_email_enabled"`
 	AlertsEmailAddress string           `json:"alerts_email_address"`
@@ -78,7 +78,5 @@ type TeamsResponse struct {
 }
 
 type TeamResponse struct {
-	Data  Team  `json:"data"`
-	Links Links `json:"links"`
-	Meta  Meta  `json:"meta"`
+	Data Team `json:"data"`
 }

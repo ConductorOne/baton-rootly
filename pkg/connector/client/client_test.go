@@ -313,6 +313,7 @@ func TestClient_generateURL(t *testing.T) {
 	type args struct {
 		path            string
 		queryParameters map[string]interface{}
+		pathParameters  []string
 	}
 	tests := []struct {
 		name string
@@ -323,7 +324,7 @@ func TestClient_generateURL(t *testing.T) {
 			name: "empty path, no query parameters",
 			args: args{
 				path:            "",
-				queryParameters: map[string]interface{}{},
+				queryParameters: nil,
 			},
 			want: &url.URL{
 				Scheme: "https",
@@ -331,7 +332,7 @@ func TestClient_generateURL(t *testing.T) {
 			},
 		},
 		{
-			name: "no query parameters, path starts with backslash",
+			name: "empty query parameters, path starts with backslash",
 			args: args{
 				path:            "/v1/test",
 				queryParameters: map[string]interface{}{},
@@ -343,10 +344,61 @@ func TestClient_generateURL(t *testing.T) {
 			},
 		},
 		{
+			name: "no query parameters, path starts with backslash",
+			args: args{
+				path:            "/v1/test",
+				queryParameters: nil,
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.example.com",
+				Path:   "v1/test",
+			},
+		},
+		{
+			name: "no query parameters, one path parameter",
+			args: args{
+				path:            "/v1/tests/%s",
+				queryParameters: nil,
+				pathParameters:  []string{"guid"},
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.example.com",
+				Path:   "v1/tests/guid",
+			},
+		},
+		{
+			name: "no query parameters, two path parameters",
+			args: args{
+				path:            "/v1/tests/%s/%s",
+				queryParameters: nil,
+				pathParameters:  []string{"guid1", "guid2"},
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.example.com",
+				Path:   "v1/tests/guid1/guid2",
+			},
+		},
+		{
+			name: "no query parameters, use first path parameter",
+			args: args{
+				path:            "/v1/tests/%s", // only one %s
+				queryParameters: nil,
+				pathParameters:  []string{"guid1", "guid2"}, // two path parameters
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.example.com",
+				Path:   "v1/tests/guid1", // only first parameter is used
+			},
+		},
+		{
 			name: "no query parameters, path starts without backslash",
 			args: args{
 				path:            "v1/test",
-				queryParameters: map[string]interface{}{},
+				queryParameters: nil,
 			},
 			want: &url.URL{
 				Scheme: "https",
@@ -387,6 +439,24 @@ func TestClient_generateURL(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple value types as query parameters, one path parameter",
+			args: args{
+				path: "/v1/tests/%s",
+				queryParameters: map[string]interface{}{
+					"param1": "value1",
+					"param2": 123,
+					"param3": true,
+				},
+				pathParameters: []string{"guid"},
+			},
+			want: &url.URL{
+				Scheme:   "https",
+				Host:     "api.example.com",
+				Path:     "v1/tests/guid",
+				RawQuery: "param1=value1&param2=123&param3=true",
+			},
+		},
+		{
 			name: "skips unsupported value types as query parameter",
 			args: args{
 				path: "/v1/test",
@@ -405,7 +475,7 @@ func TestClient_generateURL(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := client.generateURL(tc.args.path, tc.args.queryParameters)
+			got := client.generateURL(tc.args.path, tc.args.queryParameters, tc.args.pathParameters...)
 			require.Equal(t, tc.want, got)
 		})
 	}

@@ -2,10 +2,10 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -102,8 +102,9 @@ func (c *Client) doRequest(
 func (c *Client) generateURL(
 	path string,
 	queryParameters map[string]interface{},
-	pathParameters ...any,
+	pathParameters ...string,
 ) *url.URL {
+	// query parameters
 	params := url.Values{}
 	for key, valueAny := range queryParameters {
 		switch value := valueAny.(type) {
@@ -118,10 +119,11 @@ func (c *Client) generateURL(
 		}
 	}
 
-	if len(pathParameters) > 0 {
-		path = fmt.Sprintf(path, pathParameters...)
+	// path parameters
+	for _, param := range pathParameters {
+		// not perfect, but less error-prone than using fmt.Sprintf which takes any value type and also fails silently
+		path = strings.Replace(path, "%s", param, 1)
 	}
-
 	output := c.baseURL.JoinPath(path)
 	output.RawQuery = params.Encode()
 	return output
@@ -202,8 +204,13 @@ func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, e
 }
 
 // GetTeamMemberAndAdminIDs returns a list of member user IDs and admin user IDs for a given team ID.
-func (c *Client) GetTeamMemberAndAdminIDs(ctx context.Context, teamID string) ([]string, []string, error) {
+func (c *Client) GetTeamMemberAndAdminIDs(
+	ctx context.Context,
+	teamID string,
+) ([]int, []int, error) {
+	logger := ctxzap.Extract(ctx)
 	parsedURL := c.generateURL(GetTeamAPIEndpoint, nil, teamID)
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp TeamResponse
 	err := c.doRequest(
