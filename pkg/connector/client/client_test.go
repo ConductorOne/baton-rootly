@@ -417,7 +417,7 @@ func TestClient_GetTeams(t *testing.T) {
 				AdminIDs:           []int{96913},
 				AlertUrgencyID:     "some-guid",
 				AlertsEmailEnabled: true,
-				AlertsEmailAddress: "group-test-test@email@email.rootly.com",
+				AlertsEmailAddress: "group-test-test@email.rootly.com",
 				UpdatedAt:          "2025-04-07T07:54:11.604-07:00",
 				CreatedAt:          "2025-03-28T07:05:55.007-07:00",
 			},
@@ -453,6 +453,7 @@ func TestClient_GetTeams(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Len(t, teams, testPageSize)
+	require.Equal(t, expectedTeams[0], teams[0])
 	require.ElementsMatch(t, expectedTeams, teams)
 	require.Equal(t, expectedNextToken, nextPageToken)
 }
