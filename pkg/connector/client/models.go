@@ -109,21 +109,17 @@ type ScheduleResponse struct {
 	Data Schedule `json:"data"`
 }
 
-type ScheduleRotations struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
-	// note there's an attributes object available but don't need it for now
-}
 type ScheduleRotationsResponse struct {
-	Data  []ScheduleRotations `json:"data"`
-	Links Links               `json:"links"`
-	Meta  Meta                `json:"meta"`
+	Data  []ObjectWithoutAttributes `json:"data"`
+	Links Links                     `json:"links"`
+	Meta  Meta                      `json:"meta"`
 }
 
 type ScheduleRotationUserAttributes struct {
 	UserID int `json:"user_id"`
-	// note there are more attributes available but don't need them for now
+	// note there are more attributes available but don't need them
 }
+
 type ScheduleRotationUser struct {
 	ID         string                         `json:"id"`
 	Type       string                         `json:"type"`
@@ -134,4 +130,15 @@ type ScheduleRotationUsersResponse struct {
 	Data  []ScheduleRotationUser `json:"data"`
 	Links Links                  `json:"links"`
 	Meta  Meta                   `json:"meta"`
+}
+
+type ObjectWithoutAttributes struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	// note there's an attributes object available but don't need or want it
+}
+
+type ScheduleShiftsResponse struct {
+	// note there's a data object available but don't need it
+	Included []ObjectWithoutAttributes `json:"included"`
 }

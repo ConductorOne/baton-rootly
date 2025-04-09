@@ -221,7 +221,21 @@ func (o *scheduleBuilder) Grants(
 	}
 
 	// fetch schedule on-call members from the Rootly API
-	// TODO: implement me
+	onCallUserIDs, err := o.client.ListOnCallUsers(ctx, resource.Id.Resource)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	// add grants for schedule on-call members
+	for _, onCallUserID := range onCallUserIDs {
+		grants = append(grants, grant.NewGrant(
+			resource,
+			scheduleOnCallEntitlement,
+			&v2.ResourceId{
+				ResourceType: userResourceType.Id,
+				Resource:     strconv.Itoa(onCallUserID),
+			},
+		))
+	}
 
 	return grants, "", nil, nil
 }

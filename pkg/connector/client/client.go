@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -23,6 +24,7 @@ const (
 	GetScheduleAPIEndpoint               = "/v1/schedules/%s"
 	ListScheduleRotationsAPIEndpoint     = "/v1/schedules/%s/schedule_rotations"
 	ListScheduleRotationUsersAPIEndpoint = "/v1/schedule_rotations/%s/schedule_rotation_users"
+	ListScheduleShiftsAPIEndpoint        = "/v1/shifts"
 	ResourcesPageSize                    = 200
 )
 
@@ -303,6 +305,7 @@ func (c *Client) GetScheduleOwnerIDs(
 	return resp.Data.Attributes.OwnerUserID, resp.Data.Attributes.OwnerGroupIDs, nil
 }
 
+// ListScheduleRotations returns a list of schedule rotation IDs for a given schedule ID.
 // TODO: implement pagination.
 func (c *Client) ListScheduleRotations(
 	ctx context.Context,
@@ -337,12 +340,17 @@ func (c *Client) ListScheduleRotations(
 
 	var rotationIDs []string
 	for _, rotation := range resp.Data {
+		if rotation.Type != "schedule_rotations" {
+			logger.Debug("Unexpected type in schedule rotation", zap.String("rotation.Type", rotation.Type))
+			continue
+		}
 		rotationIDs = append(rotationIDs, rotation.ID)
 	}
 	return rotationIDs, nil
 }
 
 // ListScheduleRotationUsers returns a list of user IDs for a given schedule rotation ID.
+// TODO: implement pagination.
 func (c *Client) ListScheduleRotationUsers(
 	ctx context.Context,
 	rotationID string,
@@ -411,6 +419,49 @@ func (c *Client) GetScheduleMemberIDs(
 			continue
 		}
 		userIDs = append(userIDs, rotationUserIDs...)
+	}
+
+	return userIDs, nil
+}
+
+// ListOnCallUsers returns a list of on-call user IDs for a given schedule ID.
+func (c *Client) ListOnCallUsers(
+	ctx context.Context,
+	scheduleID string,
+) ([]int, error) {
+	logger := ctxzap.Extract(ctx)
+	now := time.Now()
+	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]interface{}{
+		"include":      "user",
+		"schedule_ids": fmt.Sprintf(`[%s]`, scheduleID),
+		"from":         now.Format(time.RFC3339),
+		"to":           now.Add(1 * time.Hour).Format(time.RFC3339),
+	}, scheduleID)
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp ScheduleShiftsResponse
+	err := c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []int
+	for _, user := range resp.Included {
+		if user.Type != "users" {
+			logger.Debug("Unexpected type in on-call included users", zap.String("user.Type", user.Type))
+			continue
+		}
+		userID, err := strconv.Atoi(user.ID)
+		if err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
 	}
 
 	return userIDs, nil
