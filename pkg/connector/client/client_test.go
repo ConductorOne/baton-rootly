@@ -210,6 +210,7 @@ const (
         "total_pages": 4
     }
 }`
+	//nolint:gosec,nolintlint
 	secretsListResultsPage1of2Size1 = `{
     "data": [
         {
