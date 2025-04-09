@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	BaseURLStr           = "https://api.rootly.com"
-	ListUsersAPIEndpoint = "/v1/users"
-	ListTeamsAPIEndpoint = "/v1/teams"
-	GetTeamAPIEndpoint   = "/v1/teams/%s"
-	ResourcesPageSize    = 200
+	BaseURLStr             = "https://api.rootly.com"
+	ListUsersAPIEndpoint   = "/v1/users"
+	ListTeamsAPIEndpoint   = "/v1/teams"
+	GetTeamAPIEndpoint     = "/v1/teams/%s"
+	ListSecretsAPIEndpoint = "/v1/secrets"
+	ResourcesPageSize      = 200
 )
 
 type Client struct {
@@ -225,4 +226,27 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 	}
 
 	return resp.Data.Attributes.UserIDs, resp.Data.Attributes.AdminIDs, nil
+}
+
+// GetSecrets fetches the secrets from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSecretsAPIEndpoint)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var resp SecretsResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
 }

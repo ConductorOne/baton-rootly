@@ -65,3 +65,21 @@ type TeamsResponse struct {
 type TeamResponse struct {
 	Data Team `json:"data"`
 }
+
+type SecretAttributes struct {
+	Name      string `json:"name"`
+	UpdatedAt string `json:"updated_at"`
+	CreatedAt string `json:"created_at"`
+}
+
+type Secret struct {
+	ID         string           `json:"id"`
+	Type       string           `json:"type"`
+	Attributes SecretAttributes `json:"attributes"`
+}
+
+type SecretsResponse struct {
+	Data  []Secret `json:"data"`
+	Links Links    `json:"links"`
+	Meta  Meta     `json:"meta"`
+}

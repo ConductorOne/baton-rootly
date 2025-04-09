@@ -39,6 +39,7 @@ baton resources
 `baton-rootly` will pull down information about the following Rootly resources:
 - Users
 - Teams
+- Secrets
 
 # Contributing, Support and Issues
 
