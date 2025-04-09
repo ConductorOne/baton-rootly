@@ -55,7 +55,7 @@ func (o *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 	for _, user := range users {
 		userResource, err := sdkResource.NewUserResource(
 			getBestName(user.Attributes),
-			userResourceType,
+			o.resourceType,
 			user.ID,
 			getUserTraitOptions(user),
 			sdkResource.WithParentResourceID(parentResourceID),

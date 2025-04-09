@@ -23,4 +23,9 @@ var (
 		Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_SECRET},
 		Annotations: annotations.New(&v2.SkipEntitlementsAndGrants{}),
 	}
+	scheduleResourceType = &v2.ResourceType{
+		Id:          "schedule",
+		DisplayName: "Schedule",
+		Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+	}
 )

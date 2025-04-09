@@ -58,12 +58,12 @@ func (o *teamBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		return nil, "", nil, err
 	}
 
-	// create user resources using the SDK
+	// create team resources using the SDK
 	var resources []*v2.Resource
 	for _, team := range teams {
 		teamResource, err := sdkResource.NewGroupResource(
 			team.Attributes.Name,
-			teamResourceType,
+			o.resourceType,
 			team.ID,
 			getTeamTraitOptions(team),
 			sdkResource.WithParentResourceID(parentResourceID),

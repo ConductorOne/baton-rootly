@@ -40,6 +40,7 @@ baton resources
 - Users
 - Teams
 - Secrets
+- Schedules
 
 # Contributing, Support and Issues
 

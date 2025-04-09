@@ -54,7 +54,7 @@ func (o *secretBuilder) List(ctx context.Context, parentResourceID *v2.ResourceI
 	for _, secret := range secrets {
 		secretResource, err := sdkResource.NewSecretResource(
 			secret.Attributes.Name,
-			secretResourceType,
+			o.resourceType,
 			secret.ID,
 			getSecretTraitOptions(secret),
 			sdkResource.WithParentResourceID(parentResourceID),
