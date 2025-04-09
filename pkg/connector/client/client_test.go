@@ -210,6 +210,38 @@ const (
         "total_pages": 4
     }
 }`
+	secretsListResultsPage1of2Size1 = `{
+    "data": [
+        {
+            "id": "guid-of-my-secret",
+            "type": "secrets",
+            "attributes": {
+                "kind": "built_in",
+                "name": "secret_api_token",
+                "secret": "[REDACTED]",
+                "hashicorp_vault_mount": "secret",
+                "hashicorp_vault_path": null,
+                "hashicorp_vault_version": 0,
+                "created_at": "2025-04-09T06:45:50.486-07:00",
+                "updated_at": "2025-04-09T06:45:50.486-07:00"
+            }
+        }
+    ],
+    "links": {
+        "self": "https://api.example.com/v1/secrets?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "first": "https://api.example.com/v1/secrets?page%5Bnumber%5D=1&page%5Bsize%5D=1",
+        "prev": null,
+        "next": "https://api.example.com/v1/secrets?page%5Bnumber%5D=2&page%5Bsize%5D=1",
+        "last": "https://api.example.com/v1/secrets?page%5Bnumber%5D=2&page%5Bsize%5D=1"
+    },
+    "meta": {
+        "current_page": 1,
+        "next_page": 2,
+        "prev_page": null,
+        "total_count": 2,
+        "total_pages": 2
+    }
+}`
 )
 
 func TestClient_GetUsers(t *testing.T) {
@@ -430,6 +462,54 @@ func TestClient_GetTeams(t *testing.T) {
 	require.Len(t, teams, testPageSize)
 	require.Equal(t, expectedTeams[0], teams[0])
 	require.ElementsMatch(t, expectedTeams, teams)
+	require.Equal(t, expectedNextToken, nextPageToken)
+}
+
+func TestClient_GetSecrets(t *testing.T) {
+	const testPageSize = 1
+	expectedSecrets := []Secret{
+		{
+			ID:   "guid-of-my-secret",
+			Type: "secrets",
+			Attributes: SecretAttributes{
+				Name:      "secret_api_token",
+				UpdatedAt: "2025-04-09T06:45:50.486-07:00",
+				CreatedAt: "2025-04-09T06:45:50.486-07:00",
+			},
+		},
+	}
+	expectedNextToken := "https://api.example.com/v1/secrets?page%5Bnumber%5D=2&page%5Bsize%5D=1" //nolint:gosec,nolintlint
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(writer http.ResponseWriter, request *http.Request) {
+				writer.Header().Set(uhttp.ContentType, "application/json")
+				writer.WriteHeader(http.StatusOK)
+				_, err := writer.Write([]byte(secretsListResultsPage1of2Size1))
+				if err != nil {
+					return
+				}
+			},
+		),
+	)
+	defer server.Close()
+
+	ctx := context.Background()
+	client, err := NewClient(
+		ctx,
+		server.URL,
+		testAPIKey,
+		testPageSize,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secrets, nextPageToken, err := client.GetSecrets(ctx, "") // empty page token
+	require.Nil(t, err)
+
+	require.Len(t, secrets, testPageSize)
+	require.Equal(t, expectedSecrets[0], secrets[0])
+	require.ElementsMatch(t, expectedSecrets, secrets)
 	require.Equal(t, expectedNextToken, nextPageToken)
 }
 
