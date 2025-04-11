@@ -109,22 +109,13 @@ func (c *Client) doRequest(
 
 func (c *Client) generateURL(
 	path string,
-	queryParameters map[string]interface{},
+	queryParameters map[string]string,
 	pathParameters ...string,
 ) *url.URL {
 	// query parameters
 	params := url.Values{}
-	for key, valueAny := range queryParameters {
-		switch value := valueAny.(type) {
-		case string:
-			params.Add(key, value)
-		case int:
-			params.Add(key, strconv.Itoa(value))
-		case bool:
-			params.Add(key, strconv.FormatBool(value))
-		default:
-			continue
-		}
+	for key, value := range queryParameters {
+		params.Add(key, value)
 	}
 
 	// path parameters
@@ -160,9 +151,9 @@ func (c *Client) generateCurrentPaginatedURL(
 	// otherwise this is the first paginated request to this endpoint
 	parsedURL := c.generateURL(
 		path,
-		map[string]interface{}{
-			"page[number]": 1,
-			"page[size]":   c.resourcesPageSize,
+		map[string]string{
+			"page[number]": "1",
+			"page[size]":   strconv.Itoa(c.resourcesPageSize),
 		},
 		pathParameters...,
 	)
@@ -421,7 +412,7 @@ func (c *Client) ListOnCallUsers(
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
 	now := time.Now()
-	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]interface{}{
+	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]string{
 		"include":      "user",
 		"schedule_ids": fmt.Sprintf(`[%s]`, scheduleID),
 		"from":         now.Format(time.RFC3339),
