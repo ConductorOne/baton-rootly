@@ -42,7 +42,7 @@ jobs:
     env:
       BATON_LOG_LEVEL: debug
       # Add any environment variables needed to run baton-rootly
-      BATON_API_KEY: 'secret_api_key'
+      BATON_API_KEY: 'test'
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
