@@ -29,7 +29,7 @@ docker run --rm -v $(pwd):/out ghcr.io/conductorone/baton:latest -f "/out/sync.c
 go install github.com/conductorone/baton/cmd/baton@main
 go install github.com/conductorone/baton-rootly/cmd/baton-rootly@main
 
-BATON_API_KEY=api_key baton-rootly
+BATON_API_KEY=apiKey baton-rootly
 
 baton resources
 ```
