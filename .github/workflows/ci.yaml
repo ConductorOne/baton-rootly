@@ -7,7 +7,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.24.x
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run linters
@@ -18,7 +18,7 @@ jobs:
   go-test:
     strategy:
       matrix:
-        go-version: [1.22.x]
+        go-version: [1.24.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -37,55 +37,32 @@ jobs:
         with:
           test-results: test.json
 
-#  test:
-#    runs-on: ubuntu-latest
-#    # Define any services needed for the test suite (or delete this section)
-#    # services:
-#    #   postgres:
-#    #     image: postgres:16
-#    #     ports:
-#    #       - "5432:5432"
-#    #     env:
-#    #       POSTGRES_PASSWORD: secretpassword
-#    env:
-#      BATON_LOG_LEVEL: debug
-#      # Add any environment variables needed to run baton-rootly
-#      # BATON_BASE_URL: 'http://localhost:8080'
-#      # BATON_ACCESS_TOKEN: 'secret_token'
-#      # The following parameters are passed to grant/revoke commands
-#      # Change these to the correct IDs for your test data
-#      CONNECTOR_GRANT: 'grant:entitlement:group:1234:member:user:9876'
-#      CONNECTOR_ENTITLEMENT: 'entitlement:group:1234:member'
-#      CONNECTOR_PRINCIPAL: 'user:9876'
-#      CONNECTOR_PRINCIPAL_TYPE: 'user'
-#    steps:
-#      - name: Install Go
-#        uses: actions/setup-go@v5
-#        with:
-#          go-version: 1.22.x
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      # Install any dependencies here (or delete this)
-#      # - name: Install postgres client
-#      #   run: sudo apt install postgresql-client
-#      # Run any fixture setup here (or delete this)
-#      # - name: Import sql into postgres
-#      #   run: psql -h localhost --user postgres -f environment.sql
-#      #   env:
-#      #     PGPASSWORD: secretpassword
-#      - name: Build baton-rootly
-#        run: go build ./cmd/baton-rootly
+  test:
+    runs-on: ubuntu-latest
+    env:
+      BATON_LOG_LEVEL: debug
+      # Add any environment variables needed to run baton-rootly
+      BATON_API_KEY: 'secret_api_key'
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.x
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build baton-rootly
+        run: go build ./cmd/baton-rootly
+      - name: Run baton-rootly capabilities
+        run: ./baton-rootly capabilities
+
 #      - name: Run baton-rootly
 #        run: ./baton-rootly
 #
 #      - name: Install baton
 #        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
-#
 #      - name: Check for grant before revoking
-#
 #        run:
 #          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-#
 #
 #      - name: Revoke grants
 #        run: ./baton-rootly --revoke-grant="${{ env.CONNECTOR_GRANT }}"
@@ -98,7 +75,5 @@ jobs:
 #        run: ./baton-rootly --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
 #
 #      - name: Check grant was re-granted
-#
 #        run:
 #          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-#
