@@ -9,7 +9,7 @@ filippo.io/age/internal/stream
 ## explicit; go 1.20
 filippo.io/edwards25519
 filippo.io/edwards25519/field
-# github.com/aws/aws-lambda-go v1.47.0
+# github.com/aws/aws-lambda-go v1.48.0
 ## explicit; go 1.18
 github.com/aws/aws-lambda-go/lambda
 github.com/aws/aws-lambda-go/lambda/handlertrace
@@ -47,10 +47,10 @@ github.com/aws/aws-sdk-go-v2/internal/timeconv
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream/eventstreamapi
-# github.com/aws/aws-sdk-go-v2/config v1.29.13
+# github.com/aws/aws-sdk-go-v2/config v1.29.14
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/config
-# github.com/aws/aws-sdk-go-v2/credentials v1.17.66
+# github.com/aws/aws-sdk-go-v2/credentials v1.17.67
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/credentials
 github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds
@@ -63,7 +63,7 @@ github.com/aws/aws-sdk-go-v2/credentials/stscreds
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds/internal/config
-# github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.71
+# github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/feature/s3/manager
 # github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34
@@ -94,12 +94,12 @@ github.com/aws/aws-sdk-go-v2/service/internal/presigned-url
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared/arn
 github.com/aws/aws-sdk-go-v2/service/internal/s3shared/config
-# github.com/aws/aws-sdk-go-v2/service/lambda v1.71.1
+# github.com/aws/aws-sdk-go-v2/service/lambda v1.71.2
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/service/lambda
 github.com/aws/aws-sdk-go-v2/service/lambda/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/lambda/types
-# github.com/aws/aws-sdk-go-v2/service/s3 v1.79.1
+# github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/service/s3
 github.com/aws/aws-sdk-go-v2/service/s3/internal/arn
@@ -116,7 +116,7 @@ github.com/aws/aws-sdk-go-v2/service/sso/types
 github.com/aws/aws-sdk-go-v2/service/ssooidc
 github.com/aws/aws-sdk-go-v2/service/ssooidc/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/ssooidc/types
-# github.com/aws/aws-sdk-go-v2/service/sts v1.33.18
+# github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 ## explicit; go 1.22
 github.com/aws/aws-sdk-go-v2/service/sts
 github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints
@@ -156,7 +156,7 @@ github.com/benbjohnson/clock
 # github.com/cenkalti/backoff/v4 v4.3.0
 ## explicit; go 1.18
 github.com/cenkalti/backoff/v4
-# github.com/conductorone/baton-sdk v0.2.91
+# github.com/conductorone/baton-sdk v0.2.93
 ## explicit; go 1.23.4
 github.com/conductorone/baton-sdk/internal/connector
 github.com/conductorone/baton-sdk/pb/c1/c1z/v1
@@ -170,6 +170,7 @@ github.com/conductorone/baton-sdk/pb/c1/transport/v1
 github.com/conductorone/baton-sdk/pb/c1/utls/v1
 github.com/conductorone/baton-sdk/pkg/annotations
 github.com/conductorone/baton-sdk/pkg/auth
+github.com/conductorone/baton-sdk/pkg/bid
 github.com/conductorone/baton-sdk/pkg/cli
 github.com/conductorone/baton-sdk/pkg/config
 github.com/conductorone/baton-sdk/pkg/connectorbuilder
@@ -247,7 +248,7 @@ github.com/ennyjfrick/ruleguard-logfatal
 # github.com/envoyproxy/protoc-gen-validate v1.2.1
 ## explicit; go 1.21.1
 github.com/envoyproxy/protoc-gen-validate/validate
-# github.com/fsnotify/fsnotify v1.8.0
+# github.com/fsnotify/fsnotify v1.9.0
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
@@ -257,8 +258,8 @@ github.com/gammazero/deque
 # github.com/glebarez/go-sqlite v1.22.0
 ## explicit; go 1.17
 github.com/glebarez/go-sqlite
-# github.com/go-jose/go-jose/v4 v4.0.5
-## explicit; go 1.21
+# github.com/go-jose/go-jose/v4 v4.1.0
+## explicit; go 1.24
 github.com/go-jose/go-jose/v4
 github.com/go-jose/go-jose/v4/cipher
 github.com/go-jose/go-jose/v4/json
@@ -342,7 +343,7 @@ github.com/mitchellh/mapstructure
 # github.com/ncruces/go-strftime v0.1.9
 ## explicit; go 1.17
 github.com/ncruces/go-strftime
-# github.com/pelletier/go-toml/v2 v2.2.3
+# github.com/pelletier/go-toml/v2 v2.2.4
 ## explicit; go 1.21.0
 github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/characters
@@ -530,7 +531,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
 go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.36.0
+# golang.org/x/crypto v0.37.0
 ## explicit; go 1.23.0
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
@@ -543,10 +544,10 @@ golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-# golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
+# golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 ## explicit; go 1.23.0
 golang.org/x/exp/constraints
-# golang.org/x/net v0.38.0
+# golang.org/x/net v0.39.0
 ## explicit; go 1.23.0
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -556,18 +557,18 @@ golang.org/x/net/idna
 golang.org/x/net/internal/httpcommon
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.28.0
+# golang.org/x/oauth2 v0.29.0
 ## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.12.0
+# golang.org/x/sync v0.13.0
 ## explicit; go 1.23.0
 golang.org/x/sync/semaphore
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.31.0
+# golang.org/x/sys v0.32.0
 ## explicit; go 1.23.0
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
@@ -577,7 +578,7 @@ golang.org/x/sys/windows/svc
 golang.org/x/sys/windows/svc/debug
 golang.org/x/sys/windows/svc/eventlog
 golang.org/x/sys/windows/svc/mgr
-# golang.org/x/text v0.23.0
+# golang.org/x/text v0.24.0
 ## explicit; go 1.23.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -595,10 +596,10 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# google.golang.org/genproto/googleapis/api v0.0.0-20250404141209-ee84b53bf3d0
+# google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a
 ## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/api/httpbody
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20250404141209-ee84b53bf3d0
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20250409194420-de1ac958c67a
 ## explicit; go 1.23.0
 google.golang.org/genproto/googleapis/rpc/errdetails
 google.golang.org/genproto/googleapis/rpc/status
