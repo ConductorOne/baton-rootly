@@ -169,75 +169,121 @@ func (o *scheduleBuilder) Grants(
 	// initialize pagination state if needed
 	if bag.Current() == nil {
 		bag.Push(pagination.PageState{
-			ResourceTypeID: o.resourceType.Id,
+			ResourceTypeID: resource.Id.ResourceType,
+			ResourceID:     resource.Id.Resource,
 		})
 	}
-
-	// fetch schedule owners from the Rootly API
-	ownerUserID, ownerTeamIDs, err := o.client.GetScheduleOwnerIDs(ctx, resource.Id.Resource)
-	if err != nil {
-		return nil, "", nil, err
-	}
+	// create a new resource type ID for tracking schedule rotation pagination, only used within Grants
+	const scheduleRotationResourceTypeID = "schedule_rotation"
 
 	var grants []*v2.Grant
-	// add a grant for the owner user
-	if ownerUserID != nil {
-		grants = append(grants, grant.NewGrant(
-			resource,
-			scheduleOwnerEntitlement,
-			&v2.ResourceId{
-				ResourceType: userResourceType.Id,
-				Resource:     strconv.Itoa(*ownerUserID),
-			},
-		))
-	}
-	// add grants for the owner team(s)
-	for _, ownerTeamID := range ownerTeamIDs {
-		grants = append(grants, grant.NewGrant(
-			resource,
-			scheduleOwnerEntitlement,
-			&v2.ResourceId{
-				ResourceType: teamResourceType.Id,
-				Resource:     ownerTeamID,
-			},
-		))
+	switch bag.ResourceTypeID() {
+	case scheduleResourceType.Id:
+		scheduleID := bag.ResourceID()
+		// only handle the schedule owners and on-call members once, ie on the first iteration
+		if bag.PageToken() == "" {
+			// fetch schedule owners from the Rootly API
+			ownerUserID, ownerTeamIDs, err := o.client.GetScheduleOwnerIDs(ctx, scheduleID)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			// add a grant for the owner user
+			if ownerUserID != nil {
+				grants = append(grants, grant.NewGrant(
+					resource,
+					scheduleOwnerEntitlement,
+					&v2.ResourceId{
+						ResourceType: userResourceType.Id,
+						Resource:     strconv.Itoa(*ownerUserID),
+					},
+				))
+			}
+			// add grants for the owner team(s), and the users nested within
+			for _, ownerTeamID := range ownerTeamIDs {
+				grants = append(grants, grant.NewGrant(
+					resource,
+					scheduleOwnerEntitlement,
+					&v2.ResourceId{
+						ResourceType: teamResourceType.Id,
+						Resource:     ownerTeamID,
+					},
+					grant.WithAnnotation(&v2.GrantExpandable{
+						EntitlementIds: []string{
+							fmt.Sprintf("team:%s:%s", ownerTeamID, teamMemberEntitlement),
+							fmt.Sprintf("team:%s:%s", ownerTeamID, teamAdminEntitlement),
+						},
+					}),
+				))
+			}
+
+			// fetch schedule on-call members from the Rootly API
+			onCallUserIDs, err := o.client.ListOnCallUsers(ctx, scheduleID)
+			if err != nil {
+				return nil, "", nil, err
+			}
+			// add grants for schedule on-call members
+			for _, onCallUserID := range onCallUserIDs {
+				grants = append(grants, grant.NewGrant(
+					resource,
+					scheduleOnCallEntitlement,
+					&v2.ResourceId{
+						ResourceType: userResourceType.Id,
+						Resource:     strconv.Itoa(onCallUserID),
+					},
+				))
+			}
+		}
+
+		// fetching schedule members is more complex since it entails nested paginated API calls:
+		// 	1) this iteration fetch schedule rotations from the Rootly API and push each rotation to the bag.
+		// 	   if there are more rotation pages, also push the next page token to the bag for a future iteration.
+		// 	2) next iteration(s) fetch all the members for a rotation, handled within the other switch case.
+		rotationIDs, nextPage, err := o.client.ListScheduleRotations(ctx, scheduleID, bag.PageToken())
+		if err != nil {
+			return nil, "", nil, err
+		}
+		bag.Pop()
+		if nextPage != "" {
+			// there are more schedule rotations to fetch for this schedule
+			bag.Push(pagination.PageState{
+				ResourceTypeID: scheduleResourceType.Id,
+				ResourceID:     scheduleID,
+				Token:          nextPage,
+			})
+		}
+		for _, rotationID := range rotationIDs {
+			bag.Push(pagination.PageState{
+				ResourceTypeID: scheduleRotationResourceTypeID,
+				ResourceID:     rotationID,
+			})
+		}
+	case scheduleRotationResourceTypeID:
+		// fetch all members for the schedule rotation from the Rootly API
+		rotationID := bag.ResourceID()
+		memberUserIDs, err := o.client.ListAllScheduleRotationUsers(ctx, rotationID)
+		if err != nil {
+			return nil, "", nil, err
+		}
+		bag.Pop()
+		// add grants for these members
+		for _, memberUserID := range memberUserIDs {
+			grants = append(grants, grant.NewGrant(
+				resource,
+				scheduleMemberEntitlement,
+				&v2.ResourceId{
+					ResourceType: userResourceType.Id,
+					Resource:     strconv.Itoa(memberUserID),
+				},
+			))
+		}
 	}
 
-	// fetch schedule members from the Rootly API
-	memberUserIDs, err := o.client.GetScheduleMemberIDs(ctx, resource.Id.Resource)
+	pageToken, err := bag.Marshal()
 	if err != nil {
 		return nil, "", nil, err
 	}
-	// add grants for schedule members
-	for _, memberUserID := range memberUserIDs {
-		grants = append(grants, grant.NewGrant(
-			resource,
-			scheduleMemberEntitlement,
-			&v2.ResourceId{
-				ResourceType: userResourceType.Id,
-				Resource:     strconv.Itoa(memberUserID),
-			},
-		))
-	}
 
-	// fetch schedule on-call members from the Rootly API
-	onCallUserIDs, err := o.client.ListOnCallUsers(ctx, resource.Id.Resource)
-	if err != nil {
-		return nil, "", nil, err
-	}
-	// add grants for schedule on-call members
-	for _, onCallUserID := range onCallUserIDs {
-		grants = append(grants, grant.NewGrant(
-			resource,
-			scheduleOnCallEntitlement,
-			&v2.ResourceId{
-				ResourceType: userResourceType.Id,
-				Resource:     strconv.Itoa(onCallUserID),
-			},
-		))
-	}
-
-	return grants, "", nil, nil
+	return grants, pageToken, nil, nil
 }
 
 func newScheduleBuilder(client *client.Client) *scheduleBuilder {

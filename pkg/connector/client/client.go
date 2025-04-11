@@ -143,6 +143,7 @@ func (c *Client) generateCurrentPaginatedURL(
 	ctx context.Context,
 	pToken string,
 	path string,
+	pathParameters ...string,
 ) (*url.URL, error) {
 	logger := ctxzap.Extract(ctx)
 	if pToken != "" {
@@ -157,10 +158,14 @@ func (c *Client) generateCurrentPaginatedURL(
 	}
 
 	// otherwise this is the first paginated request to this endpoint
-	parsedURL := c.generateURL(path, map[string]interface{}{
-		"page[number]": 1,
-		"page[size]":   c.resourcesPageSize,
-	})
+	parsedURL := c.generateURL(
+		path,
+		map[string]interface{}{
+			"page[number]": 1,
+			"page[size]":   c.resourcesPageSize,
+		},
+		pathParameters...,
+	)
 	logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
 	return parsedURL, nil
 }
@@ -306,20 +311,21 @@ func (c *Client) GetScheduleOwnerIDs(
 }
 
 // ListScheduleRotations returns a list of schedule rotation IDs for a given schedule ID.
-// TODO: implement pagination.
+// It supports pagination using a page token.
 func (c *Client) ListScheduleRotations(
 	ctx context.Context,
 	scheduleID string,
-) ([]string, error) {
+	pToken string,
+) ([]string, string, error) {
 	logger := ctxzap.Extract(ctx)
-	parsedURL := c.generateURL(ListScheduleRotationsAPIEndpoint, map[string]interface{}{
-		"page[number]": 1,
-		"page[size]":   400, // note: set really high to 400 since we don't have pagination logic
-	}, scheduleID)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationsAPIEndpoint, scheduleID)
+	if err != nil {
+		return nil, "", err
+	}
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleRotationsResponse
-	err := c.doRequest(
+	err = c.doRequest(
 		ctx,
 		http.MethodGet,
 		parsedURL,
@@ -327,15 +333,7 @@ func (c *Client) ListScheduleRotations(
 		&resp,
 	)
 	if err != nil {
-		return nil, err
-	}
-	if resp.Links.Next != "" {
-		logger.Error("Unexpected paginated Next Link", zap.String("resp.Links.Next", resp.Links.Next))
-		return nil, fmt.Errorf(
-			"schedule rotations exceed maximum supported: %v of %v",
-			resp.Meta.TotalCount,
-			400,
-		)
+		return nil, "", err
 	}
 
 	var rotationIDs []string
@@ -346,24 +344,26 @@ func (c *Client) ListScheduleRotations(
 		}
 		rotationIDs = append(rotationIDs, rotation.ID)
 	}
-	return rotationIDs, nil
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return rotationIDs, resp.Links.Next, nil
 }
 
 // ListScheduleRotationUsers returns a list of user IDs for a given schedule rotation ID.
-// TODO: implement pagination.
+// It supports pagination using a page token.
 func (c *Client) ListScheduleRotationUsers(
 	ctx context.Context,
 	rotationID string,
-) ([]int, error) {
+	pToken string,
+) ([]int, string, error) {
 	logger := ctxzap.Extract(ctx)
-	parsedURL := c.generateURL(ListScheduleRotationUsersAPIEndpoint, map[string]interface{}{
-		"page[number]": 1,
-		"page[size]":   400, // note: set really high to 400 since we don't have pagination logic
-	}, rotationID)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationUsersAPIEndpoint, rotationID)
+	if err != nil {
+		return nil, "", err
+	}
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleRotationUsersResponse
-	err := c.doRequest(
+	err = c.doRequest(
 		ctx,
 		http.MethodGet,
 		parsedURL,
@@ -371,54 +371,44 @@ func (c *Client) ListScheduleRotationUsers(
 		&resp,
 	)
 	if err != nil {
-		return nil, err
-	}
-	if resp.Links.Next != "" {
-		logger.Error("Unexpected paginated Next Link", zap.String("resp.Links.Next", resp.Links.Next))
-		return nil, fmt.Errorf(
-			"schedule rotation users exceed maximum supported: %v of %v",
-			resp.Meta.TotalCount,
-			400,
-		)
+		return nil, "", err
 	}
 
 	var userIDs []int
 	for _, user := range resp.Data {
 		userIDs = append(userIDs, user.Attributes.UserID)
 	}
-	return userIDs, nil
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return userIDs, resp.Links.Next, nil
 }
 
-// GetScheduleMemberIDs returns a list of member user IDs for a given schedule ID.
-func (c *Client) GetScheduleMemberIDs(
+// ListAllScheduleRotationUsers returns a list of all the member user IDs for a given schedule rotation ID.
+// It uses pagination under the hood to make one or more requests to build the full list.
+func (c *Client) ListAllScheduleRotationUsers(
 	ctx context.Context,
-	scheduleID string,
+	rotationID string,
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
-	rotationIDs, err := c.ListScheduleRotations(ctx, scheduleID)
-	if err != nil {
-		return nil, err
-	}
-	if len(rotationIDs) == 0 {
-		logger.Debug("No schedule rotations found", zap.String("scheduleID", scheduleID))
-		return nil, nil
-	}
-
 	var userIDs []int
-	for _, rotationID := range rotationIDs {
-		rotationUserIDs, err := c.ListScheduleRotationUsers(ctx, rotationID)
+	var currentPage string
+	for {
+		memberIDs, nextPage, err := c.ListScheduleRotationUsers(ctx, rotationID, currentPage)
 		if err != nil {
 			return nil, err
 		}
-		if len(rotationUserIDs) == 0 {
-			logger.Debug(
-				"No schedule rotation users found",
-				zap.String("scheduleID", scheduleID),
-				zap.String("rotationID", rotationID),
-			)
-			continue
+
+		logger.Debug(
+			"Schedule rotations users",
+			zap.Int("number of memberIDs", len(memberIDs)),
+			zap.String("nextPage", nextPage),
+		)
+
+		currentPage = nextPage
+		userIDs = append(userIDs, memberIDs...)
+
+		if currentPage == "" {
+			break
 		}
-		userIDs = append(userIDs, rotationUserIDs...)
 	}
 
 	return userIDs, nil
