@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -13,11 +15,17 @@ import (
 )
 
 const (
-	BaseURLStr           = "https://api.rootly.com"
-	ListUsersAPIEndpoint = "/v1/users"
-	ListTeamsAPIEndpoint = "/v1/teams"
-	GetTeamAPIEndpoint   = "/v1/teams/%s"
-	ResourcesPageSize    = 200
+	BaseURLStr                           = "https://api.rootly.com"
+	ListUsersAPIEndpoint                 = "/v1/users"
+	ListTeamsAPIEndpoint                 = "/v1/teams"
+	GetTeamAPIEndpoint                   = "/v1/teams/%s"
+	ListSecretsAPIEndpoint               = "/v1/secrets"
+	ListSchedulesAPIEndpoint             = "/v1/schedules"
+	GetScheduleAPIEndpoint               = "/v1/schedules/%s"
+	ListScheduleRotationsAPIEndpoint     = "/v1/schedules/%s/schedule_rotations"
+	ListScheduleRotationUsersAPIEndpoint = "/v1/schedule_rotations/%s/schedule_rotation_users"
+	ListScheduleShiftsAPIEndpoint        = "/v1/shifts"
+	ResourcesPageSize                    = 200
 )
 
 type Client struct {
@@ -101,22 +109,13 @@ func (c *Client) doRequest(
 
 func (c *Client) generateURL(
 	path string,
-	queryParameters map[string]interface{},
+	queryParameters map[string]string,
 	pathParameters ...string,
 ) *url.URL {
 	// query parameters
 	params := url.Values{}
-	for key, valueAny := range queryParameters {
-		switch value := valueAny.(type) {
-		case string:
-			params.Add(key, value)
-		case int:
-			params.Add(key, strconv.Itoa(value))
-		case bool:
-			params.Add(key, strconv.FormatBool(value))
-		default:
-			continue
-		}
+	for key, value := range queryParameters {
+		params.Add(key, value)
 	}
 
 	// path parameters
@@ -135,6 +134,7 @@ func (c *Client) generateCurrentPaginatedURL(
 	ctx context.Context,
 	pToken string,
 	path string,
+	pathParameters ...string,
 ) (*url.URL, error) {
 	logger := ctxzap.Extract(ctx)
 	if pToken != "" {
@@ -149,10 +149,14 @@ func (c *Client) generateCurrentPaginatedURL(
 	}
 
 	// otherwise this is the first paginated request to this endpoint
-	parsedURL := c.generateURL(path, map[string]interface{}{
-		"page[number]": 1,
-		"page[size]":   c.resourcesPageSize,
-	})
+	parsedURL := c.generateURL(
+		path,
+		map[string]string{
+			"page[number]": "1",
+			"page[size]":   strconv.Itoa(c.resourcesPageSize),
+		},
+		pathParameters...,
+	)
 	logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
 	return parsedURL, nil
 }
@@ -225,4 +229,221 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 	}
 
 	return resp.Data.Attributes.UserIDs, resp.Data.Attributes.AdminIDs, nil
+}
+
+// GetSecrets fetches the secrets from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSecretsAPIEndpoint)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var resp SecretsResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
+}
+
+// GetSchedules fetches the schedules from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetSchedules(ctx context.Context, pToken string) ([]Schedule, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSchedulesAPIEndpoint)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var resp SchedulesResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
+}
+
+// GetScheduleOwnerIDs returns an owner user ID and a list of owner team IDs for a given schedule ID.
+func (c *Client) GetScheduleOwnerIDs(
+	ctx context.Context,
+	scheduleID string,
+) (*int, []string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL := c.generateURL(GetScheduleAPIEndpoint, nil, scheduleID)
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp ScheduleResponse
+	err := c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return resp.Data.Attributes.OwnerUserID, resp.Data.Attributes.OwnerGroupIDs, nil
+}
+
+// ListScheduleRotations returns a list of schedule rotation IDs for a given schedule ID.
+// It supports pagination using a page token.
+func (c *Client) ListScheduleRotations(
+	ctx context.Context,
+	scheduleID string,
+	pToken string,
+) ([]string, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationsAPIEndpoint, scheduleID)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp ScheduleRotationsResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var rotationIDs []string
+	for _, rotation := range resp.Data {
+		if rotation.Type != "schedule_rotations" {
+			logger.Debug("Unexpected type in schedule rotation", zap.String("rotation.Type", rotation.Type))
+			continue
+		}
+		rotationIDs = append(rotationIDs, rotation.ID)
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return rotationIDs, resp.Links.Next, nil
+}
+
+// ListScheduleRotationUsers returns a list of user IDs for a given schedule rotation ID.
+// It supports pagination using a page token.
+func (c *Client) ListScheduleRotationUsers(
+	ctx context.Context,
+	rotationID string,
+	pToken string,
+) ([]int, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationUsersAPIEndpoint, rotationID)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp ScheduleRotationUsersResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var userIDs []int
+	for _, user := range resp.Data {
+		userIDs = append(userIDs, user.Attributes.UserID)
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return userIDs, resp.Links.Next, nil
+}
+
+// ListAllScheduleRotationUsers returns a list of all the member user IDs for a given schedule rotation ID.
+// It uses pagination under the hood to make one or more requests to build the full list.
+func (c *Client) ListAllScheduleRotationUsers(
+	ctx context.Context,
+	rotationID string,
+) ([]int, error) {
+	logger := ctxzap.Extract(ctx)
+	var userIDs []int
+	var currentPage string
+	for {
+		memberIDs, nextPage, err := c.ListScheduleRotationUsers(ctx, rotationID, currentPage)
+		if err != nil {
+			return nil, err
+		}
+
+		logger.Debug(
+			"Schedule rotations users",
+			zap.Int("number of memberIDs", len(memberIDs)),
+			zap.String("nextPage", nextPage),
+		)
+
+		currentPage = nextPage
+		userIDs = append(userIDs, memberIDs...)
+
+		if currentPage == "" {
+			break
+		}
+	}
+
+	return userIDs, nil
+}
+
+// ListOnCallUsers returns a list of on-call user IDs for a given schedule ID.
+func (c *Client) ListOnCallUsers(
+	ctx context.Context,
+	scheduleID string,
+) ([]int, error) {
+	logger := ctxzap.Extract(ctx)
+	now := time.Now()
+	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]string{
+		"include":      "user",
+		"schedule_ids": fmt.Sprintf(`[%s]`, scheduleID),
+		"from":         now.Format(time.RFC3339),
+		"to":           now.Add(1 * time.Hour).Format(time.RFC3339),
+	}, scheduleID)
+	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+
+	var resp ScheduleShiftsResponse
+	err := c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []int
+	for _, user := range resp.Included {
+		if user.Type != "users" {
+			logger.Debug("Unexpected type in on-call included users", zap.String("user.Type", user.Type))
+			continue
+		}
+		userID, err := strconv.Atoi(user.ID)
+		if err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	return userIDs, nil
 }

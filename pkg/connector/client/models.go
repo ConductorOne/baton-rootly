@@ -65,3 +65,80 @@ type TeamsResponse struct {
 type TeamResponse struct {
 	Data Team `json:"data"`
 }
+
+type SecretAttributes struct {
+	Name      string `json:"name"`
+	UpdatedAt string `json:"updated_at"`
+	CreatedAt string `json:"created_at"`
+}
+
+type Secret struct {
+	ID         string           `json:"id"`
+	Type       string           `json:"type"`
+	Attributes SecretAttributes `json:"attributes"`
+}
+
+type SecretsResponse struct {
+	Data  []Secret `json:"data"`
+	Links Links    `json:"links"`
+	Meta  Meta     `json:"meta"`
+}
+
+type ScheduleAttributes struct {
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	OwnerUserID   *int     `json:"owner_user_id"`
+	OwnerGroupIDs []string `json:"owner_group_ids"`
+	UpdatedAt     string   `json:"updated_at"`
+	CreatedAt     string   `json:"created_at"`
+}
+
+type Schedule struct {
+	ID         string             `json:"id"`
+	Type       string             `json:"type"`
+	Attributes ScheduleAttributes `json:"attributes"`
+}
+
+type SchedulesResponse struct {
+	Data  []Schedule `json:"data"`
+	Links Links      `json:"links"`
+	Meta  Meta       `json:"meta"`
+}
+
+type ScheduleResponse struct {
+	Data Schedule `json:"data"`
+}
+
+type ScheduleRotationsResponse struct {
+	Data  []ObjectWithoutAttributes `json:"data"`
+	Links Links                     `json:"links"`
+	Meta  Meta                      `json:"meta"`
+}
+
+type ScheduleRotationUserAttributes struct {
+	UserID int `json:"user_id"`
+	// note there are more attributes available but don't need them
+}
+
+type ScheduleRotationUser struct {
+	ID         string                         `json:"id"`
+	Type       string                         `json:"type"`
+	Attributes ScheduleRotationUserAttributes `json:"attributes"`
+}
+
+type ScheduleRotationUsersResponse struct {
+	Data  []ScheduleRotationUser `json:"data"`
+	Links Links                  `json:"links"`
+	Meta  Meta                   `json:"meta"`
+}
+
+type ObjectWithoutAttributes struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+	// note there's an attributes object available but don't need or want it
+}
+
+type ScheduleShiftsResponse struct {
+	// note there's a data object available but don't need it
+	Included []ObjectWithoutAttributes `json:"included"`
+}

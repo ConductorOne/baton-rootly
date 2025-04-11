@@ -10,7 +10,7 @@ import (
 var (
 	APIKeyField = field.StringField(
 		"api-key",
-		field.WithDescription("API key for authenticating with the service"),
+		field.WithDescription("The API key for authenticating with Rootly"),
 		field.WithRequired(true),
 	)
 
