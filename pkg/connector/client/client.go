@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -411,12 +410,12 @@ func (c *Client) ListOnCallUsers(
 	scheduleID string,
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
-	now := time.Now()
+	now := time.Now().UTC()
 	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]string{
-		"include":      "user",
-		"schedule_ids": fmt.Sprintf(`[%s]`, scheduleID),
-		"from":         now.Format(time.RFC3339),
-		"to":           now.Add(1 * time.Hour).Format(time.RFC3339),
+		"include":        "user",
+		"schedule_ids[]": scheduleID,
+		"from":           now.Format(time.RFC3339),
+		"to":             now.Add(1 * time.Hour).Format(time.RFC3339),
 	}, scheduleID)
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
