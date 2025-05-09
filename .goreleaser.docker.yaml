@@ -45,7 +45,7 @@ dockers:
     goarch: arm64
     dockerfile: Dockerfile.lambda
     image_templates:
-      - [mb] TODO
+      - "168442440833.dkr.ecr.us-west-2.amazonaws.com/baton-rootly:{{ .Version }}-arm64"
     build_flag_templates:
       - "--platform=linux/arm64/v8"
       - "--label=org.opencontainers.image.created={{.Date}}"
