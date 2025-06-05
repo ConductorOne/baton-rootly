@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "valid config - with api key",
 			config: &Rootly{
-				ApiKey: "test-api-key",
+				ApiKey: "abc123",
 			},
 			wantErr: false,
 		},
@@ -30,11 +31,11 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateConfig(tt.config)
+			err := field.Validate(Config, tt.config)
 			if tt.wantErr {
 				assert.Error(t, err)
 				if err != nil {
-					assert.Contains(t, err.Error(), "required field 'api-key' is missing")
+					assert.Contains(t, err.Error(), "field api-key of type string is marked as required but it has a zero-value")
 				}
 			} else {
 				assert.NoError(t, err)
