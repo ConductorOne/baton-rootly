@@ -42,9 +42,6 @@ func main() {
 // getConnector initializes and returns the connector.
 func getConnector(ctx context.Context, rc *cfg.Rootly) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
-	if err := cfg.ValidateConfig(rc); err != nil {
-		return nil, err
-	}
 
 	apiKey := rc.ApiKey
 
