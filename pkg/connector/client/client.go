@@ -160,6 +160,10 @@ func (c *Client) generateCurrentPaginatedURL(
 	return parsedURL, nil
 }
 
+func (c *Client) IsTest() bool {
+	return c.apiKey == "test"
+}
+
 // GetUsers fetches users from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, error) {
 	logger := ctxzap.Extract(ctx)

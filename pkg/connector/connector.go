@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/conductorone/baton-rootly/pkg/connector/client"
@@ -40,7 +41,17 @@ func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 
 // Validate is called to ensure that the connector is properly configured. It should exercise any API credentials
 // to be sure that they are valid.
-func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error) {
+func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, error) {
+	if d.client.IsTest() {
+		// skip for capabilities and config generation
+		return nil, nil
+	}
+
+	_, _, err := d.client.GetUsers(ctx, "")
+	if err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
 	return nil, nil
 }
 
