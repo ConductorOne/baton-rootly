@@ -400,6 +400,10 @@ func (c *Client) ListAllScheduleRotationUsers(
 	rotationID string,
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
+	if rotationID == "" {
+		logger.Error("list-all-schedule-rotation-users: rotationID is required")
+		return nil, fmt.Errorf("list-all-schedule-rotation-users: rotationID is required")
+	}
 	var userIDs []int
 	var currentPage string
 	for {
