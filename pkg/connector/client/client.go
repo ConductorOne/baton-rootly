@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -92,7 +93,9 @@ func (c *Client) doRequest(
 
 	// do the request and handle the response
 	l.Debug("sending request", zap.String("url", url.String()), zap.String("method", method))
-	var respOptions []uhttp.DoOption
+	// Add error response handling
+	var rootlyError RootlyErrorResponse
+	respOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&rootlyError)}
 	if target != nil {
 		respOptions = append(respOptions, uhttp.WithJSONResponse(target))
 	}
@@ -169,7 +172,7 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 	logger := ctxzap.Extract(ctx)
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListUsersAPIEndpoint)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-users: %w", err)
 	}
 
 	var resp UsersResponse
@@ -181,7 +184,7 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-users: %w", err)
 	}
 	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
@@ -192,7 +195,7 @@ func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, e
 	logger := ctxzap.Extract(ctx)
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListTeamsAPIEndpoint)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-teams: %w", err)
 	}
 
 	var resp TeamsResponse
@@ -204,7 +207,7 @@ func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, e
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-teams: %w", err)
 	}
 	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
@@ -216,6 +219,10 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 	teamID string,
 ) ([]int, []int, error) {
 	logger := ctxzap.Extract(ctx)
+	if teamID == "" {
+		logger.Error("get-team-member-and-admin-ids: teamID is required")
+		return nil, nil, fmt.Errorf("get-team-member-and-admin-ids: teamID is required")
+	}
 	parsedURL := c.generateURL(GetTeamAPIEndpoint, nil, teamID)
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
@@ -228,7 +235,7 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 		&resp,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("get-team-member-and-admin-ids: %w", err)
 	}
 
 	return resp.Data.Attributes.UserIDs, resp.Data.Attributes.AdminIDs, nil
@@ -239,7 +246,7 @@ func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, strin
 	logger := ctxzap.Extract(ctx)
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSecretsAPIEndpoint)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-secrets: %w", err)
 	}
 
 	var resp SecretsResponse
@@ -251,7 +258,7 @@ func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, strin
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-secrets: %w", err)
 	}
 	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
@@ -262,7 +269,7 @@ func (c *Client) GetSchedules(ctx context.Context, pToken string) ([]Schedule, s
 	logger := ctxzap.Extract(ctx)
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSchedulesAPIEndpoint)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-schedules: %w", err)
 	}
 
 	var resp SchedulesResponse
@@ -274,7 +281,7 @@ func (c *Client) GetSchedules(ctx context.Context, pToken string) ([]Schedule, s
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("get-schedules: %w", err)
 	}
 	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
@@ -286,6 +293,10 @@ func (c *Client) GetScheduleOwnerIDs(
 	scheduleID string,
 ) (*int, []string, error) {
 	logger := ctxzap.Extract(ctx)
+	if scheduleID == "" {
+		logger.Error("get-schedule-owner-ids: scheduleID is required")
+		return nil, nil, fmt.Errorf("get-schedule-owner-ids: scheduleID is required")
+	}
 	parsedURL := c.generateURL(GetScheduleAPIEndpoint, nil, scheduleID)
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
@@ -298,7 +309,7 @@ func (c *Client) GetScheduleOwnerIDs(
 		&resp,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("get-schedule-owner-ids: %w", err)
 	}
 
 	return resp.Data.Attributes.OwnerUserID, resp.Data.Attributes.OwnerGroupIDs, nil
@@ -312,9 +323,13 @@ func (c *Client) ListScheduleRotations(
 	pToken string,
 ) ([]string, string, error) {
 	logger := ctxzap.Extract(ctx)
+	if scheduleID == "" {
+		logger.Error("list-schedule-rotations: scheduleID is required")
+		return nil, "", fmt.Errorf("list-schedule-rotations: scheduleID is required")
+	}
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationsAPIEndpoint, scheduleID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("list-schedule-rotations: %w", err)
 	}
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
@@ -327,7 +342,7 @@ func (c *Client) ListScheduleRotations(
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("list-schedule-rotations: %w", err)
 	}
 
 	var rotationIDs []string
@@ -350,9 +365,13 @@ func (c *Client) ListScheduleRotationUsers(
 	pToken string,
 ) ([]int, string, error) {
 	logger := ctxzap.Extract(ctx)
+	if rotationID == "" {
+		logger.Error("list-schedule-rotation-users: rotationID is required")
+		return nil, "", fmt.Errorf("list-schedule-rotation-users: rotationID is required")
+	}
 	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationUsersAPIEndpoint, rotationID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("list-schedule-rotation-users: %w", err)
 	}
 	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
@@ -365,7 +384,7 @@ func (c *Client) ListScheduleRotationUsers(
 		&resp,
 	)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("list-schedule-rotation-users: %w", err)
 	}
 
 	var userIDs []int
@@ -383,12 +402,16 @@ func (c *Client) ListAllScheduleRotationUsers(
 	rotationID string,
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
+	if rotationID == "" {
+		logger.Error("list-all-schedule-rotation-users: rotationID is required")
+		return nil, fmt.Errorf("list-all-schedule-rotation-users: rotationID is required")
+	}
 	var userIDs []int
 	var currentPage string
 	for {
 		memberIDs, nextPage, err := c.ListScheduleRotationUsers(ctx, rotationID, currentPage)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list-all-schedule-rotation-users: %w", err)
 		}
 
 		logger.Debug(
@@ -414,6 +437,10 @@ func (c *Client) ListOnCallUsers(
 	scheduleID string,
 ) ([]int, error) {
 	logger := ctxzap.Extract(ctx)
+	if scheduleID == "" {
+		logger.Error("list-on-call-users: scheduleID is required")
+		return nil, fmt.Errorf("list-on-call-users: scheduleID is required")
+	}
 	now := time.Now().UTC()
 	parsedURL := c.generateURL(ListScheduleShiftsAPIEndpoint, map[string]string{
 		"include":        "user",
@@ -432,7 +459,7 @@ func (c *Client) ListOnCallUsers(
 		&resp,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list-on-call-users: %w", err)
 	}
 
 	var userIDs []int
@@ -443,7 +470,7 @@ func (c *Client) ListOnCallUsers(
 		}
 		userID, err := strconv.Atoi(user.ID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list-on-call-users: %w", err)
 		}
 		userIDs = append(userIDs, userID)
 	}

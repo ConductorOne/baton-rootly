@@ -49,7 +49,7 @@ func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 
 	_, _, err := d.client.GetUsers(ctx, "")
 	if err != nil {
-		return nil, fmt.Errorf("validation failed: %w", err)
+		return nil, fmt.Errorf("rootly client validation failed: %w", err)
 	}
 
 	return nil, nil
