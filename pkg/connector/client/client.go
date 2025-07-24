@@ -342,7 +342,7 @@ func (c *Client) ListScheduleRotations(
 		&resp,
 	)
 	if err != nil {
-		return nil, "", fmt.Errorf("list-schedule-rotation-users: %w", err)
+		return nil, "", fmt.Errorf("list-schedule-rotations: %w", err)
 	}
 
 	var rotationIDs []string
