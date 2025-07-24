@@ -93,7 +93,9 @@ func (c *Client) doRequest(
 
 	// do the request and handle the response
 	l.Debug("sending request", zap.String("url", url.String()), zap.String("method", method))
-	var respOptions []uhttp.DoOption
+	// Add error response handling
+	var rootlyError RootlyErrorResponse
+	respOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&rootlyError)}
 	if target != nil {
 		respOptions = append(respOptions, uhttp.WithJSONResponse(target))
 	}

@@ -1,5 +1,10 @@
 package client
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Links struct {
 	Self  string `json:"self"`
 	First string `json:"first"`
@@ -15,6 +20,38 @@ type Meta struct {
 	TotalPages   int `json:"total_pages"`
 	TotalCount   int `json:"total_count"`
 }
+
+type RootlyError struct {
+	Title  string `json:"title"`
+	Status string `json:"status"`
+	Code   string `json:"code"`   // optional
+	Detail string `json:"detail"` // optional
+}
+
+// RootlyError represents an error response from the Rootly API.
+type RootlyErrorResponse struct {
+	Errors []RootlyError `json:"errors"`
+}
+
+// Message implements the uhttp.ErrorResponse interface.
+func (e *RootlyErrorResponse) Message() string {
+	if len(e.Errors) == 0 {
+		return "Unknown error from Rootly API"
+	}
+	var msgs []string
+	for _, rootlyError := range e.Errors {
+		msg := fmt.Sprintf("%s: %s", rootlyError.Title, rootlyError.Status)
+		if rootlyError.Code != "" {
+			msg += fmt.Sprintf(", code: %s", rootlyError.Code)
+		}
+		if rootlyError.Detail != "" {
+			msg += fmt.Sprintf(", detail: %s", rootlyError.Detail)
+		}
+		msgs = append(msgs, msg)
+	}
+	return strings.Join(msgs, "; ")
+}
+
 type UserAttributes struct {
 	Name      string `json:"name"`
 	Email     string `json:"email"`
@@ -41,6 +78,7 @@ type BasicAttribute struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
+
 type TeamAttributes struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
