@@ -30,6 +30,7 @@ const (
 
 type Client struct {
 	httpClient        *uhttp.BaseHttpClient
+	logger            *zap.Logger
 	baseURL           *url.URL
 	apiKey            string
 	resourcesPageSize int
@@ -37,7 +38,8 @@ type Client struct {
 
 // NewClient creates a new Rootly client. Allows for a configurable base URL, API key, and resources page size.
 func NewClient(ctx context.Context, baseURL string, apiKey string, resourcesPageSize int) (*Client, error) {
-	httpClient, err := uhttp.NewClient(ctx, uhttp.WithLogger(true, ctxzap.Extract(ctx)))
+	logger := ctxzap.Extract(ctx)
+	httpClient, err := uhttp.NewClient(ctx, uhttp.WithLogger(true, logger))
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client failed: %w", err)
 	}
@@ -65,6 +67,7 @@ func NewClient(ctx context.Context, baseURL string, apiKey string, resourcesPage
 	// and built-in GET response caching
 	return &Client{
 		httpClient:        wrapper,
+		logger:            logger,
 		baseURL:           parsedURL,
 		apiKey:            apiKey,
 		resourcesPageSize: resourcesPageSize,
@@ -80,8 +83,6 @@ func (c *Client) doRequest(
 	requestBody interface{},
 	target interface{},
 ) error {
-	l := ctxzap.Extract(ctx)
-
 	// create the request
 	reqOptions := []uhttp.RequestOption{
 		uhttp.WithBearerToken(c.apiKey),
@@ -96,7 +97,7 @@ func (c *Client) doRequest(
 	}
 
 	// do the request and handle the response
-	l.Debug("sending request", zap.String("url", url.String()), zap.String("method", method))
+	c.logger.Debug("sending request", zap.String("url", url.String()), zap.String("method", method))
 	// Add error response handling
 	var rootlyError RootlyErrorResponse
 	respOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&rootlyError)}
@@ -137,12 +138,10 @@ func (c *Client) generateURL(
 // generateCurrentPaginatedURL either parses the URL from the page token, or generates a new URL
 // with initial pagination if there's no token.
 func (c *Client) generateCurrentPaginatedURL(
-	ctx context.Context,
 	pToken string,
 	path string,
 	pathParameters ...string,
 ) (*url.URL, error) {
-	logger := ctxzap.Extract(ctx)
 	if pToken != "" {
 		// this is not the first request to this endpoint
 		// use the token string, ie a full URL with params already populated based on the prior request
@@ -150,7 +149,7 @@ func (c *Client) generateCurrentPaginatedURL(
 		if err != nil {
 			return nil, err
 		}
-		logger.Debug("Parsed token for paginated URL", zap.String("parsedURL", parsedURL.String()))
+		c.logger.Debug("Parsed token for paginated URL", zap.String("parsedURL", parsedURL.String()))
 		return parsedURL, nil
 	}
 
@@ -163,7 +162,7 @@ func (c *Client) generateCurrentPaginatedURL(
 		},
 		pathParameters...,
 	)
-	logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated first paginated URL", zap.String("parsedURL", parsedURL.String()))
 	return parsedURL, nil
 }
 
@@ -173,8 +172,7 @@ func (c *Client) IsTest() bool {
 
 // GetUsers fetches users from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, error) {
-	logger := ctxzap.Extract(ctx)
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListUsersAPIEndpoint)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListUsersAPIEndpoint)
 	if err != nil {
 		return nil, "", fmt.Errorf("get-users: %w", err)
 	}
@@ -190,14 +188,13 @@ func (c *Client) GetUsers(ctx context.Context, pToken string) ([]User, string, e
 	if err != nil {
 		return nil, "", fmt.Errorf("get-users: %w", err)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
 }
 
 // GetTeams fetches the teams from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, error) {
-	logger := ctxzap.Extract(ctx)
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListTeamsAPIEndpoint)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListTeamsAPIEndpoint)
 	if err != nil {
 		return nil, "", fmt.Errorf("get-teams: %w", err)
 	}
@@ -213,7 +210,7 @@ func (c *Client) GetTeams(ctx context.Context, pToken string) ([]Team, string, e
 	if err != nil {
 		return nil, "", fmt.Errorf("get-teams: %w", err)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
 }
 
@@ -222,13 +219,12 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 	ctx context.Context,
 	teamID string,
 ) ([]int, []int, error) {
-	logger := ctxzap.Extract(ctx)
 	if teamID == "" {
-		logger.Error("get-team-member-and-admin-ids: teamID is required")
+		c.logger.Error("get-team-member-and-admin-ids: teamID is required")
 		return nil, nil, fmt.Errorf("get-team-member-and-admin-ids: teamID is required")
 	}
 	parsedURL := c.generateURL(GetTeamAPIEndpoint, nil, teamID)
-	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp TeamResponse
 	err := c.doRequest(
@@ -247,8 +243,7 @@ func (c *Client) GetTeamMemberAndAdminIDs(
 
 // GetSecrets fetches the secrets from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, string, error) {
-	logger := ctxzap.Extract(ctx)
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSecretsAPIEndpoint)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListSecretsAPIEndpoint)
 	if err != nil {
 		return nil, "", fmt.Errorf("get-secrets: %w", err)
 	}
@@ -264,14 +259,13 @@ func (c *Client) GetSecrets(ctx context.Context, pToken string) ([]Secret, strin
 	if err != nil {
 		return nil, "", fmt.Errorf("get-secrets: %w", err)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
 }
 
 // GetSchedules fetches the schedules from the Rootly API. It supports pagination using a page token.
 func (c *Client) GetSchedules(ctx context.Context, pToken string) ([]Schedule, string, error) {
-	logger := ctxzap.Extract(ctx)
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListSchedulesAPIEndpoint)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListSchedulesAPIEndpoint)
 	if err != nil {
 		return nil, "", fmt.Errorf("get-schedules: %w", err)
 	}
@@ -287,7 +281,7 @@ func (c *Client) GetSchedules(ctx context.Context, pToken string) ([]Schedule, s
 	if err != nil {
 		return nil, "", fmt.Errorf("get-schedules: %w", err)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return resp.Data, resp.Links.Next, nil
 }
 
@@ -296,13 +290,12 @@ func (c *Client) GetScheduleOwnerIDs(
 	ctx context.Context,
 	scheduleID string,
 ) (*int, []string, error) {
-	logger := ctxzap.Extract(ctx)
 	if scheduleID == "" {
-		logger.Error("get-schedule-owner-ids: scheduleID is required")
+		c.logger.Error("get-schedule-owner-ids: scheduleID is required")
 		return nil, nil, fmt.Errorf("get-schedule-owner-ids: scheduleID is required")
 	}
 	parsedURL := c.generateURL(GetScheduleAPIEndpoint, nil, scheduleID)
-	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleResponse
 	err := c.doRequest(
@@ -326,16 +319,15 @@ func (c *Client) ListScheduleRotations(
 	scheduleID string,
 	pToken string,
 ) ([]string, string, error) {
-	logger := ctxzap.Extract(ctx)
 	if scheduleID == "" {
-		logger.Error("list-schedule-rotations: scheduleID is required")
+		c.logger.Error("list-schedule-rotations: scheduleID is required")
 		return nil, "", fmt.Errorf("list-schedule-rotations: scheduleID is required")
 	}
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationsAPIEndpoint, scheduleID)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListScheduleRotationsAPIEndpoint, scheduleID)
 	if err != nil {
 		return nil, "", fmt.Errorf("list-schedule-rotations: %w", err)
 	}
-	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleRotationsResponse
 	err = c.doRequest(
@@ -352,12 +344,12 @@ func (c *Client) ListScheduleRotations(
 	var rotationIDs []string
 	for _, rotation := range resp.Data {
 		if rotation.Type != "schedule_rotations" {
-			logger.Debug("Unexpected type in schedule rotation", zap.String("rotation.Type", rotation.Type))
+			c.logger.Debug("Unexpected type in schedule rotation", zap.String("rotation.Type", rotation.Type))
 			continue
 		}
 		rotationIDs = append(rotationIDs, rotation.ID)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return rotationIDs, resp.Links.Next, nil
 }
 
@@ -368,16 +360,15 @@ func (c *Client) ListScheduleRotationUsers(
 	rotationID string,
 	pToken string,
 ) ([]int, string, error) {
-	logger := ctxzap.Extract(ctx)
 	if rotationID == "" {
-		logger.Error("list-schedule-rotation-users: rotationID is required")
+		c.logger.Error("list-schedule-rotation-users: rotationID is required")
 		return nil, "", fmt.Errorf("list-schedule-rotation-users: rotationID is required")
 	}
-	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListScheduleRotationUsersAPIEndpoint, rotationID)
+	parsedURL, err := c.generateCurrentPaginatedURL(pToken, ListScheduleRotationUsersAPIEndpoint, rotationID)
 	if err != nil {
 		return nil, "", fmt.Errorf("list-schedule-rotation-users: %w", err)
 	}
-	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleRotationUsersResponse
 	err = c.doRequest(
@@ -395,7 +386,7 @@ func (c *Client) ListScheduleRotationUsers(
 	for _, user := range resp.Data {
 		userIDs = append(userIDs, user.Attributes.UserID)
 	}
-	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	c.logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
 	return userIDs, resp.Links.Next, nil
 }
 
@@ -405,9 +396,8 @@ func (c *Client) ListAllScheduleRotationUsers(
 	ctx context.Context,
 	rotationID string,
 ) ([]int, error) {
-	logger := ctxzap.Extract(ctx)
 	if rotationID == "" {
-		logger.Error("list-all-schedule-rotation-users: rotationID is required")
+		c.logger.Error("list-all-schedule-rotation-users: rotationID is required")
 		return nil, fmt.Errorf("list-all-schedule-rotation-users: rotationID is required")
 	}
 	var userIDs []int
@@ -418,7 +408,7 @@ func (c *Client) ListAllScheduleRotationUsers(
 			return nil, fmt.Errorf("list-all-schedule-rotation-users: %w", err)
 		}
 
-		logger.Debug(
+		c.logger.Debug(
 			"Schedule rotations users",
 			zap.Int("number of memberIDs", len(memberIDs)),
 			zap.String("nextPage", nextPage),
@@ -440,9 +430,8 @@ func (c *Client) ListOnCallUsers(
 	ctx context.Context,
 	scheduleID string,
 ) ([]int, error) {
-	logger := ctxzap.Extract(ctx)
 	if scheduleID == "" {
-		logger.Error("list-on-call-users: scheduleID is required")
+		c.logger.Error("list-on-call-users: scheduleID is required")
 		return nil, fmt.Errorf("list-on-call-users: scheduleID is required")
 	}
 	now := time.Now().UTC()
@@ -452,7 +441,7 @@ func (c *Client) ListOnCallUsers(
 		"from":           now.Format(time.RFC3339),
 		"to":             now.Add(1 * time.Hour).Format(time.RFC3339),
 	}, scheduleID)
-	logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
+	c.logger.Debug("Generated URL", zap.String("parsedURL", parsedURL.String()))
 
 	var resp ScheduleShiftsResponse
 	err := c.doRequest(
@@ -469,7 +458,7 @@ func (c *Client) ListOnCallUsers(
 	var userIDs []int
 	for _, user := range resp.Included {
 		if user.Type != "users" {
-			logger.Debug("Unexpected type in on-call included users", zap.String("user.Type", user.Type))
+			c.logger.Debug("Unexpected type in on-call included users", zap.String("user.Type", user.Type))
 			continue
 		}
 		userID, err := strconv.Atoi(user.ID)
