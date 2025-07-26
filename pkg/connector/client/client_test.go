@@ -940,7 +940,7 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := client.generateCurrentPaginatedURL(ctx, tc.args.pToken, tc.args.path, tc.args.pathParameters...)
+			got, err := client.generateCurrentPaginatedURL(tc.args.pToken, tc.args.path, tc.args.pathParameters...)
 			// only get an error if the provided path in unparseable, not an interesting test case
 			require.Nil(t, err)
 			require.Equal(t, tc.want, got)
