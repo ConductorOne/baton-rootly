@@ -37,7 +37,12 @@ type Client struct {
 
 // NewClient creates a new Rootly client. Allows for a configurable base URL, API key, and resources page size.
 func NewClient(ctx context.Context, baseURL string, apiKey string, resourcesPageSize int) (*Client, error) {
-	httpClient, err := uhttp.NewBaseHttpClientWithContext(ctx, http.DefaultClient)
+	logger := ctxzap.Extract(ctx)
+	httpClient, err := uhttp.NewClient(ctx, uhttp.WithLogger(true, logger))
+	if err != nil {
+		return nil, fmt.Errorf("creating HTTP client failed: %w", err)
+	}
+	wrapper, err := uhttp.NewBaseHttpClientWithContext(ctx, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +65,7 @@ func NewClient(ctx context.Context, baseURL string, apiKey string, resourcesPage
 	// as it provides automatic rate limiting handling, error wrapping with gRPC status codes,
 	// and built-in GET response caching
 	return &Client{
-		httpClient:        httpClient,
+		httpClient:        wrapper,
 		baseURL:           parsedURL,
 		apiKey:            apiKey,
 		resourcesPageSize: resourcesPageSize,
