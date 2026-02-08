@@ -13,9 +13,14 @@ var (
 		field.WithIsSecret(true),
 	)
 
+	BaseURLField = field.StringField(
+		"base-url",
+		field.WithDescription("Override the Rootly API URL (for testing)"),
+	)
+
 	//go:generate go run ./gen
 	Config = field.NewConfiguration(
-		[]field.SchemaField{APIKeyField},
+		[]field.SchemaField{APIKeyField, BaseURLField},
 		field.WithConnectorDisplayName("Rootly"),
 		field.WithHelpUrl("/docs/baton/rootly"),
 		field.WithIconUrl("/static/app-icons/rootly.svg"),

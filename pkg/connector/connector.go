@@ -56,8 +56,8 @@ func (d *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context, apiKey string) (*Connector, error) {
-	rootlyClient, err := client.NewClient(ctx, client.BaseURLStr, apiKey, client.ResourcesPageSize)
+func New(ctx context.Context, baseURL, apiKey string) (*Connector, error) {
+	rootlyClient, err := client.NewClient(ctx, baseURL, apiKey, client.ResourcesPageSize)
 	if err != nil {
 		return nil, err
 	}
