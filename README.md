@@ -1,6 +1,6 @@
 ![Baton Logo](./baton-logo.png)
 
-# `baton-rootly` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-rootly.svg)](https://pkg.go.dev/github.com/conductorone/baton-rootly) ![main ci](https://github.com/conductorone/baton-rootly/actions/workflows/main.yaml/badge.svg)
+# `baton-rootly` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-rootly.svg)](https://pkg.go.dev/github.com/conductorone/baton-rootly) ![verify](https://github.com/conductorone/baton-rootly/actions/workflows/verify.yaml/badge.svg)
 
 `baton-rootly` is a connector for [Rootly](https://docs.rootly.com/api-reference/overview) built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
