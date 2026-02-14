@@ -16,6 +16,7 @@ var (
 	BaseURLField = field.StringField(
 		"base-url",
 		field.WithDescription("Override the Rootly API URL (for testing)"),
+		field.WithHidden(true),
 	)
 
 	//go:generate go run ./gen
