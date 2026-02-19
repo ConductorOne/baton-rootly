@@ -17,6 +17,7 @@ var (
 		"base-url",
 		field.WithDescription("Override the Rootly API URL (for testing)"),
 		field.WithHidden(true),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
 	)
 
 	//go:generate go run ./gen
