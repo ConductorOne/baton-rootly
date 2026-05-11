@@ -15,6 +15,8 @@ import (
 	sdkResource "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ connectorbuilder.ResourceSyncer = (*scheduleBuilder)(nil)
@@ -59,6 +61,10 @@ func (o *scheduleBuilder) List(ctx context.Context, parentResourceID *v2.Resourc
 	// fetch schedules from the Rootly API with pagination
 	schedules, token, err := o.client.GetSchedules(ctx, bag.PageToken())
 	if err != nil {
+		if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+			logger.Warn("Schedules endpoint not available (API key may lack On-call role), skipping schedule sync", zap.Error(err))
+			return nil, "", nil, nil
+		}
 		return nil, "", nil, err
 	}
 
@@ -163,6 +169,7 @@ func (o *scheduleBuilder) Grants(
 	resource *v2.Resource,
 	pToken *pagination.Token,
 ) ([]*v2.Grant, string, annotations.Annotations, error) {
+	logger := ctxzap.Extract(ctx)
 	// set up pagination
 	bag := &pagination.Bag{}
 	err := bag.Unmarshal(pToken.Token)
@@ -188,6 +195,10 @@ func (o *scheduleBuilder) Grants(
 			// fetch schedule owners from the Rootly API
 			ownerUserID, ownerTeamIDs, err := o.client.GetScheduleOwnerIDs(ctx, scheduleID)
 			if err != nil {
+				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+					logger.Warn("Schedule owner endpoint not available, skipping owner grants", zap.String("scheduleID", scheduleID), zap.Error(err))
+					return nil, "", nil, nil
+				}
 				return nil, "", nil, err
 			}
 			// add a grant for the owner user
@@ -222,7 +233,12 @@ func (o *scheduleBuilder) Grants(
 			// fetch schedule on-call members from the Rootly API
 			onCallUserIDs, err := o.client.ListOnCallUsers(ctx, scheduleID)
 			if err != nil {
-				return nil, "", nil, err
+				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+					logger.Warn("On-call users endpoint not available, skipping on-call grants", zap.String("scheduleID", scheduleID), zap.Error(err))
+					onCallUserIDs = nil
+				} else {
+					return nil, "", nil, err
+				}
 			}
 			// add grants for schedule on-call members
 			for _, onCallUserID := range onCallUserIDs {
@@ -243,6 +259,10 @@ func (o *scheduleBuilder) Grants(
 		// 	2) next iteration(s) fetch all the members for a rotation, handled within the other switch case.
 		rotationIDs, nextPage, err := o.client.ListScheduleRotations(ctx, scheduleID, bag.PageToken())
 		if err != nil {
+			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+				logger.Warn("Schedule rotations endpoint not available, skipping rotation grants", zap.String("scheduleID", scheduleID), zap.Error(err))
+				return nil, "", nil, nil
+			}
 			return nil, "", nil, err
 		}
 		bag.Pop()
@@ -265,6 +285,11 @@ func (o *scheduleBuilder) Grants(
 		rotationID := bag.ResourceID()
 		memberUserIDs, err := o.client.ListAllScheduleRotationUsers(ctx, rotationID)
 		if err != nil {
+			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+				logger.Warn("Schedule rotation users endpoint not available, skipping rotation member grants", zap.String("rotationID", rotationID), zap.Error(err))
+				bag.Pop()
+				break
+			}
 			return nil, "", nil, err
 		}
 		bag.Pop()
