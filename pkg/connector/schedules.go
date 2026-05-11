@@ -63,7 +63,7 @@ func (o *scheduleBuilder) List(ctx context.Context, parentResourceID *v2.Resourc
 	if err != nil {
 		if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 			logger.Warn("Schedules endpoint not available (API key may lack On-call role), skipping schedule sync", zap.Error(err))
-			return nil, "", nil, nil //nolint:nilerr // 404 means the On-call module is unavailable; skip gracefully.
+			return nil, "", nil, nil
 		}
 		return nil, "", nil, err
 	}
@@ -197,7 +197,7 @@ func (o *scheduleBuilder) Grants(
 			if err != nil {
 				if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 					logger.Warn("Schedule owner endpoint not available, skipping owner grants", zap.String("scheduleID", scheduleID), zap.Error(err))
-					return nil, "", nil, nil //nolint:nilerr // 404 means the On-call module is unavailable; skip gracefully.
+					return nil, "", nil, nil
 				}
 				return nil, "", nil, err
 			}
@@ -261,7 +261,7 @@ func (o *scheduleBuilder) Grants(
 		if err != nil {
 			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 				logger.Warn("Schedule rotations endpoint not available, skipping rotation grants", zap.String("scheduleID", scheduleID), zap.Error(err))
-				return nil, "", nil, nil //nolint:nilerr // 404 means the On-call module is unavailable; skip gracefully.
+				return nil, "", nil, nil
 			}
 			return nil, "", nil, err
 		}
