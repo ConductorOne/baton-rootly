@@ -450,7 +450,7 @@ func TestClient_GetUsers(t *testing.T) {
 			args: args{
 				pTokenPath: "",
 			},
-			want: want{
+			want: want{ //nolint:gosec // G101: pagination token, not a credential
 				users: []User{
 					{
 						ID:   "97487",
@@ -476,7 +476,7 @@ func TestClient_GetUsers(t *testing.T) {
 				resourcesPageSize: 1,
 				responseBody:      usersListResultsPage2of2Size1,
 			},
-			args: args{
+			args: args{ //nolint:gosec // G101: pagination token, not a credential
 				pTokenPath: "/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
 			},
 			want: want{
@@ -926,7 +926,7 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 		},
 		{
 			name: "valid page token, generates url fully from the token",
-			args: args{
+			args: args{ //nolint:gosec // G101: pagination token, not a credential
 				pToken: "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=4",
 				path:   "/v1/test",
 			},

@@ -45,9 +45,7 @@ func main() {
 func getConnector(ctx context.Context, rc *cfg.Rootly) (types.ConnectorServer, error) {
 	l := ctxzap.Extract(ctx)
 
-	apiKey := rc.ApiKey
-
-	c, err := connector.New(ctx, apiKey)
+	c, err := connector.New(ctx, rc.BaseUrl, rc.ApiKey)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
