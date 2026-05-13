@@ -95,7 +95,7 @@ func getScheduleTraitOptions(schedule client.Schedule) []sdkResource.GroupTraitO
 		"schedule_id": schedule.ID,
 		"name":        schedule.Attributes.Name,
 		"created_at":  schedule.Attributes.CreatedAt,
-		"updated_at":  schedule.Attributes.UpdatedAt,
+		"updated_at":  schedule.Attributes.UpdatedAt, //nolint:goconst // duplicate string in test/key context, not a magic value
 	}
 
 	// optional Rootly fields

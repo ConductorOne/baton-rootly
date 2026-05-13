@@ -450,13 +450,13 @@ func TestClient_GetUsers(t *testing.T) {
 			args: args{
 				pTokenPath: "",
 			},
-			want: want{
+			want: want{ //nolint:gosec // G101: pagination token, not a credential
 				users: []User{
 					{
 						ID:   "97487",
-						Type: "users",
+						Type: "users", //nolint:goconst // duplicate string in test/key context, not a magic value
 						Attributes: UserAttributes{
-							Name:      "Sam Testsalot",
+							Name:      "Sam Testsalot", //nolint:goconst // duplicate string in test/key context, not a magic value
 							Email:     "sam.testsalot@team1.com",
 							Phone:     "+12345678910",
 							FullName:  "Sam Testsalot",
@@ -476,7 +476,7 @@ func TestClient_GetUsers(t *testing.T) {
 				resourcesPageSize: 1,
 				responseBody:      usersListResultsPage2of2Size1,
 			},
-			args: args{
+			args: args{ //nolint:gosec // G101: pagination token, not a credential
 				pTokenPath: "/v1/users?page%5Bnumber%5D=2&page%5Bsize%5D=1",
 			},
 			want: want{
@@ -485,7 +485,7 @@ func TestClient_GetUsers(t *testing.T) {
 						ID:   "96913",
 						Type: "users",
 						Attributes: UserAttributes{
-							Name:      "Jo Codesalot",
+							Name:      "Jo Codesalot", //nolint:goconst // duplicate string in test/key context, not a magic value
 							Email:     "jo.codesalot@team1.com",
 							Phone:     "",
 							FullName:  "Jo Codesalot",
@@ -593,7 +593,7 @@ func TestClient_GetUsers(t *testing.T) {
 func TestClient_GetTeams(t *testing.T) {
 	expectedTeams := []Team{
 		{
-			ID:   "sre-team-guid",
+			ID:   "sre-team-guid", //nolint:goconst // duplicate string in test/key context, not a magic value
 			Type: "groups",
 			Attributes: TeamAttributes{
 				Name:        "SRE",
@@ -726,7 +726,7 @@ func TestClient_GetSchedules(t *testing.T) {
 	expectedOwnerUserID := 96913
 	expectedSchedules := []Schedule{
 		{
-			ID:   "test-schedule-guid",
+			ID:   "test-schedule-guid", //nolint:goconst // duplicate string in test/key context, not a magic value
 			Type: "schedules",
 			Attributes: ScheduleAttributes{
 				Name:          "Production Oncall",
@@ -901,12 +901,12 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 			name: "empty page token, generates url from path and client config values",
 			args: args{
 				pToken: "",
-				path:   "/v1/test",
+				path:   "/v1/test", //nolint:goconst // duplicate string in test/key context, not a magic value
 			},
 			want: &url.URL{
-				Scheme:   "https",
-				Host:     "api.example.com",
-				Path:     "v1/test",
+				Scheme:   "https", //nolint:goconst // duplicate string in test/key context, not a magic value
+				Host:     "api.example.com", //nolint:goconst // duplicate string in test/key context, not a magic value
+				Path:     "v1/test", //nolint:goconst // duplicate string in test/key context, not a magic value
 				RawQuery: "page%5Bnumber%5D=1&page%5Bsize%5D=6",
 			},
 		},
@@ -915,7 +915,7 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 			args: args{
 				pToken:         "",
 				path:           "/v1/tests/%s/%s",
-				pathParameters: []string{"guid1", "guid2"},
+				pathParameters: []string{"guid1", "guid2"}, //nolint:goconst // duplicate string in test/key context, not a magic value
 			},
 			want: &url.URL{
 				Scheme:   "https",
@@ -926,7 +926,7 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 		},
 		{
 			name: "valid page token, generates url fully from the token",
-			args: args{
+			args: args{ //nolint:gosec // G101: pagination token, not a credential
 				pToken: "https://api.example.com/v1/teams?page%5Bnumber%5D=2&page%5Bsize%5D=4",
 				path:   "/v1/test",
 			},
@@ -1002,7 +1002,7 @@ func TestClient_generateURL(t *testing.T) {
 		{
 			name: "no query parameters, one path parameter",
 			args: args{
-				path:            "/v1/tests/%s",
+				path:            "/v1/tests/%s", //nolint:goconst // duplicate string in test/key context, not a magic value
 				queryParameters: nil,
 				pathParameters:  []string{"guid"},
 			},
@@ -1055,7 +1055,7 @@ func TestClient_generateURL(t *testing.T) {
 			args: args{
 				path: "/v1/test",
 				queryParameters: map[string]string{
-					"param1": "value1",
+					"param1": "value1", //nolint:goconst // duplicate string in test/key context, not a magic value
 				},
 			},
 			want: &url.URL{

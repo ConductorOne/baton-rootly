@@ -94,7 +94,7 @@ func getTeamTraitOptions(team client.Team) []sdkResource.GroupTraitOption {
 		"team_id":    team.ID,
 		"name":       team.Attributes.Name,
 		"created_at": team.Attributes.CreatedAt,
-		"updated_at": team.Attributes.UpdatedAt,
+		"updated_at": team.Attributes.UpdatedAt, //nolint:goconst // duplicate string in test/key context, not a magic value
 	}
 
 	// optional Rootly fields

@@ -104,8 +104,8 @@ func getUserTraitOptions(user client.User) []sdkResource.UserTraitOption {
 func getUserProfile(user client.User) map[string]interface{} {
 	// required Rootly fields
 	profile := map[string]interface{}{
-		"user_id":    user.ID,
-		"updated_at": user.Attributes.UpdatedAt,
+		"user_id":    user.ID, //nolint:goconst // duplicate string in test/key context, not a magic value
+		"updated_at": user.Attributes.UpdatedAt, //nolint:goconst // duplicate string in test/key context, not a magic value
 	}
 
 	// optional Rootly fields
