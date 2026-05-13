@@ -469,7 +469,7 @@ func (c *Client) ListOnCallUsers(
 
 	var userIDs []int
 	for _, user := range resp.Included {
-		if user.Type != "users" { //nolint:goconst // duplicate string in test/key context, not a magic value
+		if user.Type != "users" {
 			logger.Debug("Unexpected type in on-call included users", zap.String("user.Type", user.Type))
 			continue
 		}

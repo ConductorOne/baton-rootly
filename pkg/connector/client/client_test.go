@@ -454,9 +454,9 @@ func TestClient_GetUsers(t *testing.T) {
 				users: []User{
 					{
 						ID:   "97487",
-						Type: "users", //nolint:goconst // duplicate string in test/key context, not a magic value
+						Type: "users",
 						Attributes: UserAttributes{
-							Name:      "Sam Testsalot", //nolint:goconst // duplicate string in test/key context, not a magic value
+							Name:      "Sam Testsalot",
 							Email:     "sam.testsalot@team1.com",
 							Phone:     "+12345678910",
 							FullName:  "Sam Testsalot",
@@ -485,7 +485,7 @@ func TestClient_GetUsers(t *testing.T) {
 						ID:   "96913",
 						Type: "users",
 						Attributes: UserAttributes{
-							Name:      "Jo Codesalot", //nolint:goconst // duplicate string in test/key context, not a magic value
+							Name:      "Jo Codesalot",
 							Email:     "jo.codesalot@team1.com",
 							Phone:     "",
 							FullName:  "Jo Codesalot",
@@ -593,7 +593,7 @@ func TestClient_GetUsers(t *testing.T) {
 func TestClient_GetTeams(t *testing.T) {
 	expectedTeams := []Team{
 		{
-			ID:   "sre-team-guid", //nolint:goconst // duplicate string in test/key context, not a magic value
+			ID:   "sre-team-guid",
 			Type: "groups",
 			Attributes: TeamAttributes{
 				Name:        "SRE",
@@ -726,7 +726,7 @@ func TestClient_GetSchedules(t *testing.T) {
 	expectedOwnerUserID := 96913
 	expectedSchedules := []Schedule{
 		{
-			ID:   "test-schedule-guid", //nolint:goconst // duplicate string in test/key context, not a magic value
+			ID:   "test-schedule-guid",
 			Type: "schedules",
 			Attributes: ScheduleAttributes{
 				Name:          "Production Oncall",
@@ -901,12 +901,12 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 			name: "empty page token, generates url from path and client config values",
 			args: args{
 				pToken: "",
-				path:   "/v1/test", //nolint:goconst // duplicate string in test/key context, not a magic value
+				path:   "/v1/test",
 			},
 			want: &url.URL{
-				Scheme:   "https", //nolint:goconst // duplicate string in test/key context, not a magic value
-				Host:     "api.example.com", //nolint:goconst // duplicate string in test/key context, not a magic value
-				Path:     "v1/test", //nolint:goconst // duplicate string in test/key context, not a magic value
+				Scheme:   "https",
+				Host:     "api.example.com",
+				Path:     "v1/test",
 				RawQuery: "page%5Bnumber%5D=1&page%5Bsize%5D=6",
 			},
 		},
@@ -915,7 +915,7 @@ func TestClient_generateCurrentPaginatedURL(t *testing.T) {
 			args: args{
 				pToken:         "",
 				path:           "/v1/tests/%s/%s",
-				pathParameters: []string{"guid1", "guid2"}, //nolint:goconst // duplicate string in test/key context, not a magic value
+				pathParameters: []string{"guid1", "guid2"},
 			},
 			want: &url.URL{
 				Scheme:   "https",
@@ -1002,7 +1002,7 @@ func TestClient_generateURL(t *testing.T) {
 		{
 			name: "no query parameters, one path parameter",
 			args: args{
-				path:            "/v1/tests/%s", //nolint:goconst // duplicate string in test/key context, not a magic value
+				path:            "/v1/tests/%s",
 				queryParameters: nil,
 				pathParameters:  []string{"guid"},
 			},
@@ -1055,7 +1055,7 @@ func TestClient_generateURL(t *testing.T) {
 			args: args{
 				path: "/v1/test",
 				queryParameters: map[string]string{
-					"param1": "value1", //nolint:goconst // duplicate string in test/key context, not a magic value
+					"param1": "value1",
 				},
 			},
 			want: &url.URL{

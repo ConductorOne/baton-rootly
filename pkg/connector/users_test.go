@@ -21,11 +21,11 @@ func Test_getBestName(t *testing.T) {
 			args: args{
 				userAttr: client.UserAttributes{
 					Name:     "Sam",
-					FullName: "Sam Testalot", //nolint:goconst // duplicate string in test/key context, not a magic value
-					Email:    "sam.testalot@example.com", //nolint:goconst // duplicate string in test/key context, not a magic value
+					FullName: "Sam Testalot",
+					Email:    "sam.testalot@example.com",
 				},
 			},
-			want: "Sam", //nolint:goconst // duplicate string in test/key context, not a magic value
+			want: "Sam",
 		},
 		{
 			name: "choose FullName if Name is not available",
@@ -71,7 +71,7 @@ func Test_getUserProfile(t *testing.T) {
 					ID: "123",
 					Attributes: client.UserAttributes{
 						CreatedAt: "2023-01-01T00:00:00Z", // not captured in profile
-						UpdatedAt: "2023-01-02T00:00:00Z", //nolint:goconst // duplicate string in test/key context, not a magic value
+						UpdatedAt: "2023-01-02T00:00:00Z",
 						Name:      "Sam",
 						FullName:  "Sam Testalot",             // not captured in profile
 						Email:     "sam.testalot@example.com", // not captured in profile
@@ -81,8 +81,8 @@ func Test_getUserProfile(t *testing.T) {
 				},
 			},
 			want: map[string]interface{}{
-				"user_id":    "123", //nolint:goconst // duplicate string in test/key context, not a magic value
-				"updated_at": "2023-01-02T00:00:00Z", //nolint:goconst // duplicate string in test/key context, not a magic value
+				"user_id":    "123",
+				"updated_at": "2023-01-02T00:00:00Z",
 				"slack_id":   "@testalot",
 				"phone":      "123-456-7890",
 			},
