@@ -22,6 +22,8 @@ func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.Resour
 		newTeamBuilder(d.client),
 		newSecretBuilder(d.client),
 		newScheduleBuilder(d.client),
+		newRoleBuilder(d.client),
+		newOnCallRoleBuilder(d.client),
 	}
 }
 
