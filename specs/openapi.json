@@ -1,0 +1,974 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Rootly API (baton-rootly surface)",
+    "version": "1.0.0",
+    "description": "The subset of the Rootly v1 API that baton-rootly calls. Scope is derived from pkg/connector/client/client.go; types, enums, and required flags are taken from Rootly's published OpenAPI document (https://rootly-heroku.s3.amazonaws.com/swagger/v1/swagger.json, accessed 2026-09-17). Response schemas intentionally include only the properties the connector decodes -- Rootly returns more.\n\nAll requests are sent with `Accept: application/vnd.api+json` and a bearer token (uhttp.WithBearerToken + uhttp.WithAcceptVndJSONHeader). Every operation is read-only; the connector performs no provisioning against Rootly.\n\nPagination: list operations send `page[number]` (1 on the first request) and `page[size]` (default 200, ResourcesPageSize). Subsequent pages are fetched by requesting the absolute URL in `links.next` verbatim, and the loop terminates when `links.next` is empty.\n\nCredential validation reuses `listUsers` (Connector.Validate calls GetUsers with an empty page token)."
+  },
+  "servers": [
+    {
+      "url": "https://api.rootly.com",
+      "description": "Rootly API. The connector accepts a hidden `--base-url` override, used only for tests."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Users",
+      "description": "Rootly users, synced as Baton user resources."
+    },
+    {
+      "name": "Teams",
+      "description": "Rootly teams (JSON:API type `groups`), synced as group resources with member and admin entitlements."
+    },
+    {
+      "name": "Secrets",
+      "description": "Rootly secrets, synced as resources without entitlements."
+    },
+    {
+      "name": "Schedules",
+      "description": "On-call schedules, their rotations, and the current on-call lookup."
+    }
+  ],
+  "paths": {
+    "/v1/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List users",
+        "description": "Client: pkg/connector/client/client.go:GetUsers. Reads data[].id, data[].type and the attributes modelled below. Also the connector's credential-validation probe (pkg/connector/connector.go:Validate).",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of users.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/teams": {
+      "get": {
+        "operationId": "listTeams",
+        "summary": "List teams",
+        "description": "Client: pkg/connector/client/client.go:GetTeams. Note the JSON:API resource type for a team is `groups`, not `teams`.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of teams.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/teams/{id}": {
+      "get": {
+        "operationId": "getTeam",
+        "summary": "Retrieve a team",
+        "description": "Client: pkg/connector/client/client.go:GetTeamMemberAndAdminIDs. Only `data.attributes.user_ids` and `data.attributes.admin_ids` are consumed; they become the team's member and admin grants. Not paginated -- the connector sends no query parameters.",
+        "tags": [
+          "Teams"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Team ID. The connector always passes the numeric/string `id` returned by listTeams; Rootly also accepts a team slug or UUID.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested team.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/secrets": {
+      "get": {
+        "operationId": "listSecrets",
+        "summary": "List secrets",
+        "description": "Client: pkg/connector/client/client.go:GetSecrets. The connector reads only the secret's identity and timestamps; the redacted `secret` value and the HashiCorp Vault attributes are ignored.",
+        "tags": [
+          "Secrets"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of secrets.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/schedules": {
+      "get": {
+        "operationId": "listSchedules",
+        "summary": "List schedules",
+        "description": "Client: pkg/connector/client/client.go:GetSchedules.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of schedules.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchedulesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/schedules/{id}": {
+      "get": {
+        "operationId": "getSchedule",
+        "summary": "Retrieve a schedule",
+        "description": "Client: pkg/connector/client/client.go:GetScheduleOwnerIDs. Only `data.attributes.owner_user_id` and `data.attributes.owner_group_ids` are consumed; they become the schedule's owner grants. Not paginated.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Schedule ID as returned by listSchedules.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The requested schedule.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/schedules/{schedule_id}/schedule_rotations": {
+      "get": {
+        "operationId": "listScheduleRotations",
+        "summary": "List a schedule's rotations",
+        "description": "Client: pkg/connector/client/client.go:ListScheduleRotations. Only `data[].id` is consumed, and entries whose `type` is not `schedule_rotations` are skipped, so the rotation attributes are deliberately unmodelled.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "description": "Schedule ID as returned by listSchedules.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of schedule rotations.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleRotationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/schedule_rotations/{schedule_rotation_id}/schedule_rotation_users": {
+      "get": {
+        "operationId": "listScheduleRotationUsers",
+        "summary": "List a rotation's users",
+        "description": "Client: pkg/connector/client/client.go:ListScheduleRotationUsers. ListAllScheduleRotationUsers walks every page of this operation to build a schedule's member list; only `data[].attributes.user_id` is consumed.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "name": "schedule_rotation_id",
+            "in": "path",
+            "required": true,
+            "description": "Schedule rotation ID as returned by listScheduleRotations.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageNumber"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of schedule rotation users.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleRotationUsersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    },
+    "/v1/shifts": {
+      "get": {
+        "operationId": "listShifts",
+        "summary": "List shifts (on-call lookup)",
+        "description": "Client: pkg/connector/client/client.go:ListOnCallUsers. The connector requests the shifts overlapping a one-hour window starting at the current UTC instant for a single schedule, with `include=user`, and reads only `included[]` entries whose `type` is `users` -- `data` is ignored entirely. Not paginated: the connector issues a single request and does not follow `links`/`meta`.",
+        "tags": [
+          "Schedules"
+        ],
+        "parameters": [
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "Always sent as `user`. Without it the `included` array is absent and the connector resolves no on-call users.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "shift_override",
+                "user",
+                "assignee",
+                "shift_shadow"
+              ],
+              "default": "user"
+            }
+          },
+          {
+            "name": "schedule_ids[]",
+            "in": "query",
+            "required": false,
+            "description": "Always sent with exactly one schedule ID.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Start of the window. Always sent as the current UTC time in RFC 3339.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "End of the window. Always sent as `from` plus one hour, RFC 3339.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shifts in the requested window, with the referenced users sideloaded.",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShiftsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Errors"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Rootly API key, sent as `Authorization: Bearer <api-key>`."
+      }
+    },
+    "parameters": {
+      "PageNumber": {
+        "name": "page[number]",
+        "in": "query",
+        "required": false,
+        "description": "1-based page number. The connector sends 1 on the first request and thereafter re-requests the absolute URL from `links.next`.",
+        "schema": {
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "page[size]",
+        "in": "query",
+        "required": false,
+        "description": "Page size. The connector always sends its configured resources page size, which defaults to 200 (client.ResourcesPageSize).",
+        "schema": {
+          "type": "integer",
+          "default": 200
+        }
+      }
+    },
+    "responses": {
+      "Errors": {
+        "description": "JSON:API error document. Decoded into client.RootlyErrorResponse via uhttp.WithErrorResponse and surfaced as the request error message.",
+        "content": {
+          "application/vnd.api+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorsList"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Links": {
+        "type": "object",
+        "description": "JSON:API pagination links. `next` is the connector's page token: it is stored verbatim and re-requested as an absolute URL, and an empty value ends the sync of that resource.",
+        "required": [
+          "self",
+          "first",
+          "prev",
+          "next",
+          "last"
+        ],
+        "properties": {
+          "self": {
+            "type": "string"
+          },
+          "first": {
+            "type": "string"
+          },
+          "prev": {
+            "type": "string",
+            "nullable": true
+          },
+          "next": {
+            "type": "string",
+            "nullable": true
+          },
+          "last": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Meta": {
+        "type": "object",
+        "description": "JSON:API pagination metadata. Decoded by the connector but not used for pagination decisions.",
+        "required": [
+          "current_page",
+          "next_page",
+          "prev_page",
+          "total_count",
+          "total_pages"
+        ],
+        "properties": {
+          "current_page": {
+            "type": "integer",
+            "nullable": true
+          },
+          "next_page": {
+            "type": "integer",
+            "nullable": true
+          },
+          "prev_page": {
+            "type": "integer",
+            "nullable": true
+          },
+          "total_count": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorsList": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "title",
+                "status"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "detail": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "UserAttributes": {
+        "type": "object",
+        "required": [
+          "email",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Used as the user's primary email and as the login."
+          },
+          "full_name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Used as the display name when set."
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Read by client.UserAttributes and used as a display-name fallback. Not documented in Rootly's published spec; evidence is the connector's own fixtures (pkg/connector/client/client_test.go), so treat it as unproven."
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Read by client.UserAttributes. Not documented in Rootly's published spec; evidence is the connector's fixtures only."
+          },
+          "slack_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Read by client.UserAttributes. Not documented in Rootly's published spec; evidence is the connector's fixtures only."
+          },
+          "created_at": {
+            "type": "string",
+            "description": "Date of creation."
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "Date of last update."
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Used as the Baton user resource ID."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "users"
+            ]
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/UserAttributes"
+          }
+        }
+      },
+      "UsersResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "TeamAttributes": {
+        "type": "object",
+        "required": [
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Used as the team resource's display name."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "user_ids": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "integer"
+            },
+            "description": "User IDs of the team's members. Source of the `member` entitlement's grants. Note these are integers while user resource IDs are strings."
+          },
+          "admin_ids": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "integer"
+            },
+            "description": "User IDs of the team's admins; per Rootly these are also present in user_ids. Source of the `admin` entitlement's grants."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "Team": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Used as the Baton team resource ID."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "groups"
+            ],
+            "description": "Rootly returns `groups` for teams."
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/TeamAttributes"
+          }
+        }
+      },
+      "TeamsResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "links",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Team"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "TeamResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Team"
+          }
+        }
+      },
+      "SecretAttributes": {
+        "type": "object",
+        "required": [
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Used as the secret resource's display name."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "Secret": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Used as the Baton secret resource ID."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "secrets"
+            ]
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/SecretAttributes"
+          }
+        }
+      },
+      "SecretsResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Secret"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "ScheduleAttributes": {
+        "type": "object",
+        "description": "Rootly's published spec marks no schedule attribute as required.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Used as the schedule resource's display name."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "owner_user_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "ID of the user who owns the schedule. Modelled as a pointer in Go (client.ScheduleAttributes.OwnerUserID) and treated as absent when null; source of the schedule `owner` grant for a user."
+          },
+          "owner_group_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "IDs of the teams that own the schedule; source of the schedule `owner` grants for teams."
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "Schedule": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Used as the Baton schedule resource ID."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "schedules"
+            ]
+          },
+          "attributes": {
+            "$ref": "#/components/schemas/ScheduleAttributes"
+          }
+        }
+      },
+      "SchedulesResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Schedule"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "ScheduleResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Schedule"
+          }
+        }
+      },
+      "ResourceIdentifier": {
+        "type": "object",
+        "description": "A JSON:API resource whose attributes the connector deliberately does not decode (client.ObjectWithoutAttributes).",
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "ScheduleRotationsResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceIdentifier"
+            },
+            "description": "Entries carry `type: schedule_rotations`; the connector skips any other type."
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "ScheduleRotationUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "attributes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "schedule_rotation_users"
+            ]
+          },
+          "attributes": {
+            "type": "object",
+            "required": [
+              "user_id"
+            ],
+            "properties": {
+              "user_id": {
+                "type": "integer",
+                "description": "The rotation member's user ID; source of the schedule `member` grants."
+              }
+            }
+          }
+        }
+      },
+      "ScheduleRotationUsersResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleRotationUser"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        }
+      },
+      "ShiftsResponse": {
+        "type": "object",
+        "description": "Only `included` is decoded (client.ScheduleShiftsResponse); the `data` array of shifts is intentionally omitted.",
+        "properties": {
+          "included": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResourceIdentifier"
+            },
+            "description": "Sideloaded resources from `include=user`. The connector keeps entries with `type: users` and parses their `id` as an integer user ID for the `on_call` grants."
+          }
+        }
+      }
+    }
+  }
+}
