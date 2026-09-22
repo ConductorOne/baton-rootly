@@ -62,10 +62,45 @@ type UserAttributes struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// RelationshipData is the JSON:API resource linkage object for a to-one relationship.
+type RelationshipData struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+// Relationship is a JSON:API to-one relationship. Data is nil when the relationship is unset.
+type Relationship struct {
+	Data *RelationshipData `json:"data"`
+}
+
+// UserRelationships holds the to-one role relationships Rootly returns alongside each user.
+// Rootly models permissions as exactly one Incident Response role and one On-Call role per user.
+type UserRelationships struct {
+	Role       Relationship `json:"role"`
+	OnCallRole Relationship `json:"on_call_role"`
+}
+
 type User struct {
-	ID         string         `json:"id"`
-	Type       string         `json:"type"`
-	Attributes UserAttributes `json:"attributes"`
+	ID            string             `json:"id"`
+	Type          string             `json:"type"`
+	Attributes    UserAttributes     `json:"attributes"`
+	Relationships *UserRelationships `json:"relationships"`
+}
+
+// RoleID returns the Incident Response role ID assigned to the user, or "" if there isn't one.
+func (u User) RoleID() string {
+	if u.Relationships == nil || u.Relationships.Role.Data == nil {
+		return ""
+	}
+	return u.Relationships.Role.Data.ID
+}
+
+// OnCallRoleID returns the On-Call role ID assigned to the user, or "" if there isn't one.
+func (u User) OnCallRoleID() string {
+	if u.Relationships == nil || u.Relationships.OnCallRole.Data == nil {
+		return ""
+	}
+	return u.Relationships.OnCallRole.Data.ID
 }
 
 type UsersResponse struct {
@@ -179,4 +214,48 @@ type ObjectWithoutAttributes struct {
 type ScheduleShiftsResponse struct {
 	// note there's a data object available but don't need it
 	Included []ObjectWithoutAttributes `json:"included"`
+}
+
+type RoleAttributes struct {
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	IsDeletable bool   `json:"is_deletable"`
+	IsEditable  bool   `json:"is_editable"`
+	UpdatedAt   string `json:"updated_at"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// Role is a Rootly Incident Response role, ie a named permission set from /v1/roles.
+type Role struct {
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Attributes RoleAttributes `json:"attributes"`
+}
+
+type RolesResponse struct {
+	Data  []Role `json:"data"`
+	Links Links  `json:"links"`
+	Meta  Meta   `json:"meta"`
+}
+
+type OnCallRoleAttributes struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	// SystemRole is one of admin, user, custom, observer, no_access.
+	SystemRole string `json:"system_role"`
+	UpdatedAt  string `json:"updated_at"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// OnCallRole is a Rootly On-Call role, ie a named permission set from /v1/on_call_roles.
+type OnCallRole struct {
+	ID         string               `json:"id"`
+	Type       string               `json:"type"`
+	Attributes OnCallRoleAttributes `json:"attributes"`
+}
+
+type OnCallRolesResponse struct {
+	Data  []OnCallRole `json:"data"`
+	Links Links        `json:"links"`
+	Meta  Meta         `json:"meta"`
 }
