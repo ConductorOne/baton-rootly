@@ -13,6 +13,21 @@ type Links struct {
 	Last  string `json:"last"`
 }
 
+// paginationEnvelope is the JSON:API envelope Rootly returns on every collection
+// endpoint. Links is a pointer so a response that arrived without the block is
+// distinguishable from the last page, where Rootly keeps the object and nulls links.next.
+type paginationEnvelope struct {
+	Links *Links `json:"links"`
+	Meta  Meta   `json:"meta"`
+}
+
+// HasPaginationData satisfies uhttp.PaginatedResponse, so a page that came back without
+// its links block fails the request instead of reading an empty Links.Next and silently
+// ending the sync.
+func (p *paginationEnvelope) HasPaginationData() bool {
+	return p.Links != nil
+}
+
 type Meta struct {
 	CurrentPage  int `json:"current_page"`
 	NextPage     int `json:"next_page"`
@@ -69,9 +84,8 @@ type User struct {
 }
 
 type UsersResponse struct {
-	Data  []User `json:"data"`
-	Links Links  `json:"links"`
-	Meta  Meta   `json:"meta"`
+	Data []User `json:"data"`
+	paginationEnvelope
 }
 
 type BasicAttribute struct {
@@ -95,9 +109,8 @@ type Team struct {
 }
 
 type TeamsResponse struct {
-	Data  []Team `json:"data"`
-	Links Links  `json:"links"`
-	Meta  Meta   `json:"meta"`
+	Data []Team `json:"data"`
+	paginationEnvelope
 }
 
 type TeamResponse struct {
@@ -117,9 +130,8 @@ type Secret struct {
 }
 
 type SecretsResponse struct {
-	Data  []Secret `json:"data"`
-	Links Links    `json:"links"`
-	Meta  Meta     `json:"meta"`
+	Data []Secret `json:"data"`
+	paginationEnvelope
 }
 
 type ScheduleAttributes struct {
@@ -138,9 +150,8 @@ type Schedule struct {
 }
 
 type SchedulesResponse struct {
-	Data  []Schedule `json:"data"`
-	Links Links      `json:"links"`
-	Meta  Meta       `json:"meta"`
+	Data []Schedule `json:"data"`
+	paginationEnvelope
 }
 
 type ScheduleResponse struct {
@@ -148,9 +159,8 @@ type ScheduleResponse struct {
 }
 
 type ScheduleRotationsResponse struct {
-	Data  []ObjectWithoutAttributes `json:"data"`
-	Links Links                     `json:"links"`
-	Meta  Meta                      `json:"meta"`
+	Data []ObjectWithoutAttributes `json:"data"`
+	paginationEnvelope
 }
 
 type ScheduleRotationUserAttributes struct {
@@ -165,9 +175,8 @@ type ScheduleRotationUser struct {
 }
 
 type ScheduleRotationUsersResponse struct {
-	Data  []ScheduleRotationUser `json:"data"`
-	Links Links                  `json:"links"`
-	Meta  Meta                   `json:"meta"`
+	Data []ScheduleRotationUser `json:"data"`
+	paginationEnvelope
 }
 
 type ObjectWithoutAttributes struct {
