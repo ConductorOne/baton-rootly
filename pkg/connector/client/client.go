@@ -25,6 +25,8 @@ const (
 	ListScheduleRotationsAPIEndpoint     = "/v1/schedules/%s/schedule_rotations"
 	ListScheduleRotationUsersAPIEndpoint = "/v1/schedule_rotations/%s/schedule_rotation_users"
 	ListScheduleShiftsAPIEndpoint        = "/v1/shifts"
+	ListRolesAPIEndpoint                 = "/v1/roles"
+	ListOnCallRolesAPIEndpoint           = "/v1/on_call_roles"
 	ResourcesPageSize                    = 200
 )
 
@@ -481,4 +483,50 @@ func (c *Client) ListOnCallUsers(
 	}
 
 	return userIDs, nil
+}
+
+// GetRoles fetches the Incident Response roles from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetRoles(ctx context.Context, pToken string) ([]Role, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListRolesAPIEndpoint)
+	if err != nil {
+		return nil, "", fmt.Errorf("get-roles: %w", err)
+	}
+
+	var resp RolesResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", fmt.Errorf("get-roles: %w", err)
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
+}
+
+// GetOnCallRoles fetches the On-Call roles from the Rootly API. It supports pagination using a page token.
+func (c *Client) GetOnCallRoles(ctx context.Context, pToken string) ([]OnCallRole, string, error) {
+	logger := ctxzap.Extract(ctx)
+	parsedURL, err := c.generateCurrentPaginatedURL(ctx, pToken, ListOnCallRolesAPIEndpoint)
+	if err != nil {
+		return nil, "", fmt.Errorf("get-on-call-roles: %w", err)
+	}
+
+	var resp OnCallRolesResponse
+	err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		parsedURL,
+		nil,
+		&resp,
+	)
+	if err != nil {
+		return nil, "", fmt.Errorf("get-on-call-roles: %w", err)
+	}
+	logger.Debug("Paginated URL for the next request", zap.String("resp.Links.Next", resp.Links.Next))
+	return resp.Data, resp.Links.Next, nil
 }
