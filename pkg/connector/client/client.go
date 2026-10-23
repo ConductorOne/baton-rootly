@@ -104,6 +104,11 @@ func (c *Client) doRequest(
 	if target != nil {
 		respOptions = append(respOptions, uhttp.WithJSONResponse(target))
 	}
+	// A response type that reports its own pagination data is additionally checked for it,
+	// so a page arriving without its links block fails here instead of ending the sync.
+	if paginated, ok := target.(uhttp.PaginatedResponse); ok {
+		respOptions = append(respOptions, uhttp.WithPaginationData(paginated))
+	}
 	resp, err := c.httpClient.Do(req, respOptions...)
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
