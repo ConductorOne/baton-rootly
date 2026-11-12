@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/conductorone/baton-rootly/pkg/connector/client"
@@ -9,12 +10,16 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	sdkResource "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )
 
-var _ connectorbuilder.ResourceSyncer = (*userBuilder)(nil)
+var (
+	_ connectorbuilder.ResourceSyncer         = (*userBuilder)(nil)
+	_ connectorbuilder.TypeScopedGrantsSyncer = (*userBuilder)(nil)
+)
 
 type userBuilder struct {
 	resourceType *v2.ResourceType
@@ -135,9 +140,94 @@ func (o *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *paginat
 	return nil, "", nil, nil
 }
 
-// Grants always returns an empty slice for users since they don't have any entitlements.
-func (o *userBuilder) Grants(ctx context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+// Grants always returns an empty slice for users since they don't have any entitlements of their
+// own. The role grants users are the principal of are emitted by GrantsForResourceType.
+func (o *userBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
+}
+
+// GrantsForResourceType emits every role and on-call role grant in one pass over /v1/users.
+//
+// Rootly returns each user's role relationships inline on the user list endpoint, so a single
+// paginated walk of the users yields all of them. The user resource type carries the
+// TypeScopedGrants annotation so the SDK asks for grants once for the whole type instead of
+// once per user, which keeps this at O(user pages) rather than O(users) or O(roles x user pages).
+func (o *userBuilder) GrantsForResourceType(
+	ctx context.Context,
+	resourceTypeID string,
+	opts sdkResource.SyncOpAttrs,
+) ([]*v2.Grant, *sdkResource.SyncOpResults, error) {
+	logger := ctxzap.Extract(ctx)
+	logger.Debug(
+		"Starting call to Users.GrantsForResourceType",
+		zap.String("resourceTypeID", resourceTypeID),
+		zap.String("pToken", opts.PageToken.Token),
+	)
+
+	if resourceTypeID != o.resourceType.Id {
+		return nil, nil, fmt.Errorf("baton-rootly: unexpected resource type %q for user type-scoped grants", resourceTypeID)
+	}
+
+	// set up pagination
+	bag := &pagination.Bag{}
+	err := bag.Unmarshal(opts.PageToken.Token)
+	if err != nil {
+		return nil, nil, err
+	}
+	// initialize pagination state if needed
+	if bag.Current() == nil {
+		bag.Push(pagination.PageState{
+			ResourceTypeID: o.resourceType.Id,
+		})
+	}
+
+	// fetch users from the Rootly API with pagination
+	users, token, err := o.client.GetUsers(ctx, bag.PageToken())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var grants []*v2.Grant
+	for _, user := range users {
+		principal := &v2.ResourceId{
+			ResourceType: o.resourceType.Id,
+			Resource:     user.ID,
+		}
+
+		// a user carries at most one Incident Response role and one On-Call role, and either
+		// may be absent depending on what the API key is scoped to see
+		if roleID := user.RoleID(); roleID != "" {
+			grants = append(grants, newRoleGrant(roleResourceType, roleID, principal))
+		} else {
+			logger.Debug("User has no Incident Response role", zap.String("user.ID", user.ID))
+		}
+		if onCallRoleID := user.OnCallRoleID(); onCallRoleID != "" {
+			grants = append(grants, newRoleGrant(onCallRoleResourceType, onCallRoleID, principal))
+		} else {
+			logger.Debug("User has no On-Call role", zap.String("user.ID", user.ID))
+		}
+	}
+
+	// set the next page token
+	nextPage, err := bag.NextToken(token)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return grants, &sdkResource.SyncOpResults{NextPageToken: nextPage}, nil
+}
+
+// newRoleGrant builds an "assigned" grant on a role resource for the given user principal.
+// Only the role's resource ID is needed: it is what the entitlement ID is derived from, and it
+// matches the entitlement the role syncer emits for the same role.
+func newRoleGrant(resourceType *v2.ResourceType, roleID string, principal *v2.ResourceId) *v2.Grant {
+	roleResource := &v2.Resource{
+		Id: &v2.ResourceId{
+			ResourceType: resourceType.Id,
+			Resource:     roleID,
+		},
+	}
+	return grant.NewGrant(roleResource, roleAssignedEntitlement, principal)
 }
 
 func newUserBuilder(client *client.Client) *userBuilder {
