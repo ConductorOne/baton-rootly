@@ -3,6 +3,32 @@
   "resourceTypeCapabilities": [
     {
       "resourceType": {
+        "id": "on_call_role",
+        "displayName": "On-Call Role",
+        "traits": [
+          "TRAIT_ROLE"
+        ]
+      },
+      "capabilities": [
+        "CAPABILITY_SYNC"
+      ],
+      "permissions": {}
+    },
+    {
+      "resourceType": {
+        "id": "role",
+        "displayName": "Incident Response Role",
+        "traits": [
+          "TRAIT_ROLE"
+        ]
+      },
+      "capabilities": [
+        "CAPABILITY_SYNC"
+      ],
+      "permissions": {}
+    },
+    {
+      "resourceType": {
         "id": "schedule",
         "displayName": "Schedule",
         "traits": [
@@ -54,7 +80,10 @@
         ],
         "annotations": [
           {
-            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlementsAndGrants"
+            "@type": "type.googleapis.com/c1.connector.v2.SkipEntitlements"
+          },
+          {
+            "@type": "type.googleapis.com/c1.connector.v2.TypeScopedGrants"
           }
         ]
       },
