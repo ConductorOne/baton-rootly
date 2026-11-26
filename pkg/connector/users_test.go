@@ -1,9 +1,16 @@
 package connector
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/conductorone/baton-rootly/pkg/connector/client"
+	"github.com/conductorone/baton-sdk/pkg/pagination"
+	sdkResource "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -129,4 +136,106 @@ func Test_getUserProfile(t *testing.T) {
 			require.Equal(t, tc.want, got)
 		})
 	}
+}
+
+const (
+	usersWithRolesPage1 = `{
+    "data": [
+        {
+            "id": "97487",
+            "type": "users",
+            "attributes": {"name": "Sam Testsalot", "email": "sam.testsalot@team1.com"},
+            "relationships": {
+                "role": {"data": {"id": "role-owner-guid", "type": "roles"}},
+                "on_call_role": {"data": {"id": "on-call-role-admin-guid", "type": "on_call_roles"}}
+            }
+        },
+        {
+            "id": "96913",
+            "type": "users",
+            "attributes": {"name": "Jo Codesalot", "email": "jo.codesalot@team1.com"},
+            "relationships": {
+                "role": {"data": null},
+                "on_call_role": {"data": {"id": "on-call-role-observer-guid", "type": "on_call_roles"}}
+            }
+        }
+    ],
+    "links": {"self": "", "first": "", "prev": null, "next": "%s/v1/users?page%%5Bnumber%%5D=2&page%%5Bsize%%5D=2", "last": ""},
+    "meta": {"current_page": 1, "next_page": 2, "prev_page": null, "total_count": 3, "total_pages": 2}
+}`
+	usersWithRolesPage2 = `{
+    "data": [
+        {
+            "id": "96914",
+            "type": "users",
+            "attributes": {"name": "Kim Buildsalot", "email": "kim.buildsalot@team1.com"}
+        }
+    ],
+    "links": {"self": "", "first": "", "prev": "", "next": null, "last": ""},
+    "meta": {"current_page": 2, "next_page": null, "prev_page": 1, "total_count": 3, "total_pages": 2}
+}`
+)
+
+// Test_userBuilder_GrantsForResourceType walks both user pages and checks that every role
+// relationship becomes exactly one grant, that a null relationship yields none, and that
+// pagination terminates on the last page.
+func Test_userBuilder_GrantsForResourceType(t *testing.T) {
+	ctx := context.Background()
+
+	var serverURL string
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(writer http.ResponseWriter, request *http.Request) {
+				body := fmt.Sprintf(usersWithRolesPage1, serverURL)
+				if request.URL.Query().Get("page[number]") == "2" {
+					body = usersWithRolesPage2
+				}
+				writer.Header().Set(uhttp.ContentType, "application/json")
+				writer.WriteHeader(http.StatusOK)
+				if _, err := writer.Write([]byte(body)); err != nil {
+					t.Errorf("writing test response failed: %v", err)
+				}
+			},
+		),
+	)
+	defer server.Close()
+	serverURL = server.URL
+
+	rootlyClient, err := client.NewClient(ctx, server.URL, "test-api-key", 2)
+	require.NoError(t, err)
+	builder := newUserBuilder(rootlyClient)
+
+	grants, results, err := builder.GrantsForResourceType(ctx, userResourceType.Id, sdkResource.SyncOpAttrs{})
+	require.NoError(t, err)
+	require.NotEmpty(t, results.NextPageToken, "expected a second page of users")
+
+	gotIDs := make([]string, 0, len(grants))
+	for _, g := range grants {
+		gotIDs = append(gotIDs, g.GetId())
+	}
+	require.ElementsMatch(t, []string{
+		"role:role-owner-guid:assigned:user:97487",
+		"on_call_role:on-call-role-admin-guid:assigned:user:97487",
+		"on_call_role:on-call-role-observer-guid:assigned:user:96913",
+	}, gotIDs)
+
+	// the grant's entitlement must be the one the role syncer emits for the same role
+	require.Equal(t, "role:role-owner-guid:assigned", grants[0].GetEntitlement().GetId())
+	require.Equal(t, roleResourceType.Id, grants[0].GetEntitlement().GetResource().GetId().GetResourceType())
+	require.Equal(t, userResourceType.Id, grants[0].GetPrincipal().GetId().GetResourceType())
+
+	// second page: no relationships at all, and pagination terminates
+	page2Grants, page2Results, err := builder.GrantsForResourceType(
+		ctx,
+		userResourceType.Id,
+		sdkResource.SyncOpAttrs{PageToken: pagination.Token{Token: results.NextPageToken}},
+	)
+	require.NoError(t, err)
+	require.Empty(t, page2Grants)
+	require.Equal(t, "", page2Results.NextPageToken)
+}
+
+func Test_userBuilder_GrantsForResourceType_wrongResourceType(t *testing.T) {
+	_, _, err := newUserBuilder(nil).GrantsForResourceType(context.Background(), "team", sdkResource.SyncOpAttrs{})
+	require.Error(t, err)
 }

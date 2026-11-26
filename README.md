@@ -41,6 +41,25 @@ baton resources
 - Teams
 - Secrets
 - Schedules
+- Incident Response Roles (`role`)
+- On-Call Roles (`on_call_role`)
+
+Rootly permissions are role-based: every user carries at most one Incident Response role
+(Owner / Admin / User / Observer / No Access) and at most one On-Call role (Admin / User /
+Observer / No Access / Custom). Both role catalogs are synced as `TRAIT_ROLE` resources with a
+single `assigned` entitlement, and the assignment grants are read from the `role` and
+`on_call_role` relationships that Rootly returns inline on `GET /v1/users`.
+
+Notes on the role model:
+- Rootly creates a system role per team, so an On-Call catalog often holds several roles with
+  the same name. Where a role's slug says more than its name (`Admin` with slug `admin-1`), the
+  slug is appended to the display name so reviewers can tell them apart.
+- The public API exposes exactly one `role` and one `on_call_role` per user, so per-team role
+  assignments cannot be modeled today. Which role a multi-team user resolves to depends on what
+  the API key is scoped to.
+- Role sync is read-only. Rootly's `PUT /v1/users/{id}` replaces a user's role rather than
+  adding to it, and Rootly documents that role changes may revert when a tenant is managed
+  through SCIM, so provisioning is intentionally left out.
 
 # Contributing, Support and Issues
 
